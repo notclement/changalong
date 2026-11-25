@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.8.8';
+const VERSION = '0.8.9';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -526,6 +526,29 @@ $('#bBack').onclick = () => { follow = true; followT = 0; $('#bBack').classList.
 function open(id) { closeAll(); $('#veil').classList.add('show'); $(id).classList.add('show'); }
 function closeAll() { $('#veil').classList.remove('show'); for (const s of document.querySelectorAll('.sheet')) s.classList.remove('show'); }
 $('#veil').onclick = closeAll;
+// Bottom sheets: × button, or swipe down to close (from the handle, or anywhere once scrolled to the top).
+for (const sh of document.querySelectorAll('.sheet')) {
+  sh.querySelector('.xclose').onclick = closeAll;
+  let y0 = null, dy = 0, tStart = 0;
+  sh.addEventListener('touchstart', e => {
+    const onHandle = e.touches[0].clientY - sh.getBoundingClientRect().top < 40;
+    if (sh.scrollTop > 0 && !onHandle) { y0 = null; return; }
+    y0 = e.touches[0].clientY; dy = 0; tStart = performance.now();
+  }, { passive: true });
+  sh.addEventListener('touchmove', e => {
+    if (y0 == null) return;
+    dy = e.touches[0].clientY - y0;
+    if (dy <= 0) { sh.classList.remove('drag'); sh.style.transform = ''; return; }
+    e.preventDefault(); sh.classList.add('drag'); sh.style.transform = 'translateY(' + dy + 'px)';
+  }, { passive: false });
+  const end = () => {
+    if (y0 == null) return; y0 = null;
+    const fast = dy > 40 && dy / Math.max(1, performance.now() - tStart) > 0.5;
+    sh.classList.remove('drag'); sh.style.transform = '';
+    if (dy > 110 || fast) closeAll();
+  };
+  sh.addEventListener('touchend', end); sh.addEventListener('touchcancel', end);
+}
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeAll(); $('#pop').classList.remove('show'); } });
 const openSettings = () => { $('#sungRow').hidden = !(song && song.lang === 'zh'); for (const b of document.querySelectorAll('#segSung button')) b.setAttribute('aria-pressed', (b.dataset.v === 'yue') === !!(song && song.yue)); $('#offRow').hidden = !(song && song.timed); $('#offV').textContent = offset().toFixed(1) + ' s'; open('#shSet'); };
 $('#bSet1').onclick = openSettings; $('#bSet2').onclick = openSettings;
