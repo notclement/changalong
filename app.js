@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.9.0';
+const VERSION = '0.9.1';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -350,6 +350,9 @@ function openRecord(rec, alts) {
   $('#tEnd').textContent = song.timed ? fmt(song.dur) : '—';
   $('#seek').disabled = !song.timed;
   renderStage(); cur = -1; lastPrep = -1; ended = false; follow = true;
+  // a new song always opens at its first line, clock at 0:00
+  $('#toast').classList.remove('show'); $('#stage').scrollTop = 0; $('#tNow').textContent = '0:00'; $('#seek').value = 0; setPaused(false); $('#bBack').classList.remove('show');
+  requestAnimationFrame(() => scrollToLine(0, true));
   if (song.timed) { mode = 'wait'; running = false; base = 0; banner('wait'); }
   else { mode = 'tap'; running = false; go(0); fillLine(0); banner(''); }
   $('#bTap').textContent = song.timed ? 'Tap as the next line starts' : 'Next line';
