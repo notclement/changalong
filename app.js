@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '1.0.8';
+const VERSION = '1.0.9';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -152,13 +152,25 @@ async function findVariants(title, artist, onStep) {
   for (const [q, want] of [[zt + ' ' + za, zt], [zt, zt], [tr(zt) + ' ' + tr(za), zt], [tr(zt), zt], [simp(zt), zt]]) {
     const hit = await tryQ(q, want); if (hit) return hit;
   }
-  onStep && onStep('Asking the AI for the Chinese title…');
-  const ai = await aiName(title, artist, () => onStep && onStep('The free AI is busy, trying again in a few seconds…'));
-  if (ai) for (const [q, want] of [[ai.s + ' ' + ai.a, ai.s], [ai.s, ai.s], [ai.t, ai.s], [ai.t + ' ' + tr(ai.a), ai.s]]) {
-    const hit = await tryQ(q, want); if (hit) { hit.ai = true; return hit; }
+  // the AI: the Chinese title (if Shazam gave English/romanised), other titles the song goes by, and other singers' versions
+  onStep && onStep('Asking the AI for other names and versions…');
+  const vs = await aiVariants(title, artist, () => onStep && onStep('The free AI is busy, trying again in a few seconds…'));
+  const wants = [zt].concat(vs.map(v => v.s));
+  const okAny = r => wants.some(w => sameSong(r, w));
+  for (const v of vs) for (const q of [v.s + ' ' + v.a, v.s, v.t]) {
+    const hit = await tryQ(q, v.s); if (hit) { hit.ai = true; return hit; }
+  }
+  // by singer only: their songs, keeping one whose title matches any of the names above
+  for (const a of [...new Set([za, ...vs.map(v => v.a)].filter(Boolean))].slice(0, 3)) {
+    onStep && onStep('Looking through ' + a + '’s songs…');
+    if (done.has(a)) continue; done.add(a);
+    const r = await searchQ(a); for (const x of r) if (!seen.has(x.id)) { seen.add(x.id); near.push(x); }
+    const hit = r.filter(okAny); if (hit.length) { hit.ai = true; return hit; }
   }
   if (!near.length && [...zt].length >= 4) await tryQ([...zt].slice(0, Math.ceil([...zt].length / 2)).join(''), '\u0000');   // start of the title: closest results only
-  const out = []; out.near = rank(near); return out;
+  // closest first: most characters in common with any of the names
+  const score = r => Math.max(...wants.map(w => { const a = new Set(squash(r.trackName)), b = [...squash(w)]; return b.length ? b.filter(c => a.has(c)).length / b.length : 0; }));
+  const out = []; out.near = rank(near).map(r => [score(r), r]).filter(x => x[0] >= 0.34).sort((a, b) => b[0] - a[0]).map(x => x[1]); return out;
 }
 
 
@@ -703,16 +715,20 @@ async function aiText(prompt, onWait, ok) {
   return good(await pollinations(prompt, 'https://text.pollinations.ai/'));
 }
 // Shazam name (often English or romanised) → the song's Chinese title and singer.
-async function aiName(title, artist, onWait) {
-  const ck = 'ainame.' + title + '|' + artist, cached = store.get(ck, null); if (cached) return cached;
-  const prompt = 'Song: "' + title + '"' + (artist ? ' by "' + artist + '"' : '') + '. What is its original Chinese title and the singer\'s Chinese name? ' +
-    'Reply with exactly one line: Simplified Chinese title|Traditional Chinese title|Singer in Chinese. If you don\'t know this song, reply UNKNOWN. No other text.';
+async function aiVariants(title, artist, onWait) {
+  const ck = 'aivar.' + title + '|' + artist, cached = store.get(ck, null); if (cached) return cached;
+  const prompt = 'Song: "' + title + '"' + (artist ? ' by "' + artist + '"' : '') + '. List the names this song is known by, to find its lyrics: ' +
+    'first its original Chinese title and singer, then any other titles it goes by and well-known versions by other singers (covers, duets, the original if this is a cover). ' +
+    'Up to 5 lines, each: Simplified Chinese title|Traditional Chinese title|Singer in Chinese. Not remixes or DJ versions. If you don\'t know this song, reply UNKNOWN. No other text.';
   const t = await aiText(prompt, onWait, x => /UNKNOWN/i.test(x) || /\|/.test(x));
-  const p = t && !/UNKNOWN/i.test(t) ? t.split('\n').find(l => l.includes('|')).split('|').map(x => x.replace(/^[\s"“”]+|[\s"“”]+$/g, '')) : null;
-  const res = p && [...(p[0] || '')].some(isZh) ? { s: simp(p[0]), t: p[1] || p[0], a: p[2] || '' } : null;
-  log('ai name', title, artist, res);
-  if (res) store.set(ck, res);
-  return res;
+  const res = [];
+  if (t && !/^\s*UNKNOWN/i.test(t)) for (const l of t.split('\n')) {
+    const p = l.split('|').map(x => x.replace(/^[\s"“”\d.、-]+|[\s"“”]+$/g, ''));
+    if (p.length >= 2 && [...p[0]].some(isZh) && !res.some(r => r.s === simp(p[0]) && r.a === (p[2] || ''))) res.push({ s: simp(p[0]), t: p[1] || p[0], a: p[2] || '' });
+  }
+  log('ai variants', title, artist, res);
+  if (res.length) store.set(ck, res.slice(0, 5));
+  return res.slice(0, 5);
 }
 // Pinyin initials → song titles. The AI suggests; every title is checked against the initials here, so wrong guesses never show.
 async function aiInitials(q, onWait) {
