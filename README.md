@@ -67,6 +67,9 @@ Made by [Clement](https://www.linkedin.com/in/clementsg).
 
 ## Changelog
 
+**1.1.2**
+- Listen reuses the open ChàngAlong tab instead of piling up new Safari tabs (where Safari allows it)
+
 **1.1.1**
 - Built-in song list grown to ~1,700 songs (more classics, Cantopop and recent hits), singers checked
 

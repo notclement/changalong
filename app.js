@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '1.1.1';
+const VERSION = '1.1.2';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -816,11 +816,34 @@ $('#bHome').onclick = () => show('browse');
 $('#nowbar').onclick = () => show('sing');
 
 /* ---------- arriving from the Shortcut: ?title=&artist= ---------- */
+// The Shortcut opens a new Safari tab each time. If this tab came from the Shortcut and a ChàngAlong tab is waiting
+// (Listen was pressed there moments ago), hand the song to that tab and close this one. Safari lets a page close
+// a tab only if it has no back history, so if closing doesn't work this tab just carries on as before.
 async function fromShortcut() {
   const p = new URLSearchParams(location.search);
   const title = (p.get('title') || '').trim(), artist = (p.get('artist') || '').trim(), q = (p.get('q') || '').trim();
   if (!title && !q) return false;
   history.replaceState(null, '', location.pathname);
+  const waiting = Date.now() - store.get('listenAt', 0) < 180000;
+  if (waiting && history.length <= 1) {
+    store.set('listenAt', 0); store.set('pending', { title, artist, q, at: Date.now() });
+    log('handing song to the waiting tab, closing this one');
+    window.close();
+    await new Promise(r => setTimeout(r, 600));
+    store.set('pending', null);                                     // still here: closing wasn't allowed
+  }
+  return loadShortcutSong(title, artist, q);
+}
+function takePending() {
+  const pd = store.get('pending', null); if (!pd || Date.now() - pd.at > 300000) return;
+  store.set('pending', null); log('song handed over from the Shortcut tab', pd.title);
+  show('browse'); loadShortcutSong(pd.title, pd.artist, pd.q);
+}
+addEventListener('visibilitychange', () => { if (!document.hidden) takePending(); });
+addEventListener('pageshow', takePending); addEventListener('focus', takePending);
+addEventListener('storage', e => { if (e.key && e.key.endsWith('pending') && !document.hidden) takePending(); });
+for (const id of ['#bListen', '#bListen2']) $(id).addEventListener('click', () => store.set('listenAt', Date.now()));
+async function loadShortcutSong(title, artist, q) {
   log('from shortcut', title, artist, q);
   $('#q').value = q || [title, artist].filter(Boolean).join(' '); syncClear();
   $('#results').innerHTML = '<p class="msg">Finding lyrics for “' + esc(title || q) + '”…</p>';
