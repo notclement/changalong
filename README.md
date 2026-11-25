@@ -48,7 +48,7 @@
 - 🔤 **Smart readings** for characters with more than one pronunciation (多音字): 长大 → zhǎng dà, 银行 → yín háng
 - ✍️ **Fix any reading**: press and hold a syllable and pick the right one; it's remembered for that song
 - 繁 **Traditional → Simplified** conversion (can be turned off)
-- 🗣️ **Cantonese mode** with jyutping (nei5 hou2) for Cantopop, set per song; about 65 Cantopop classics switch on automatically
+- 🗣️ **Cantonese mode** with jyutping (nei5 hou2) for Cantopop, set per song; about 170 Cantopop songs switch on automatically
 - 🌏 **Other languages** (English, Japanese, Korean…) are shown as plain text with the same timing
 
 **Singing**
@@ -62,7 +62,7 @@
 - 🎙️ **Listen** with iPhone's built-in Shazam (via a Shortcut)
 - 🔎 **Search** by title, part of a title (`你那么`), or **pinyin initials** (`nnmat` → 你那么爱她)
 - 🤖 Initials work for **any well-known song**: a free AI suggests titles, and the app keeps only the ones whose initials really match
-- 📚 Built-in list of **~530 KTV favourites** for instant suggestions, plus your recent songs and favourites
+- 📚 Built-in list of **~1,260 KTV favourites** (Mandopop, Cantopop, classics and recent hits) for instant suggestions, plus your recent songs and favourites
 
 **Everything else**
 - ℹ️ **Song info**: a short plain-English summary of what the song means (AI), and **Translate the lyrics**
@@ -138,12 +138,12 @@ flowchart LR
 | Pinyin | [pinyin-pro](https://github.com/zh-lx/pinyin-pro), bundled | Free, offline |
 | Cantonese | [to-jyutping](https://github.com/CanCLID/to-jyutping), bundled, loaded on demand | Free, offline |
 | Traditional → Simplified | Dictionaries from [OpenCC](https://github.com/BYVoid/OpenCC) | Free, offline |
-| Song info & initials | [Pollinations](https://pollinations.ai) text API, no key | Free, rate-limited (~1 request / 15 s) |
+| Song info & initials | 1. [Pollinations](https://pollinations.ai), no key · 2. Google Gemini with your own free key (optional, Settings) · 3. [Puter](https://puter.com), free sign-in, on request | Free; Pollinations is rate-limited (~1 request / 15 s) |
 | Hosting | GitHub Pages | Free |
 
 **Privacy:** no account, no tracking. Your favourites, recent songs, timing fixes and reading fixes stay on your phone. The only things sent anywhere are song names and lyrics excerpts (to LRCLIB and the AI). Audio is handled by Apple's Shazam and never reaches this app.
 
-**Limits worth knowing:** lyrics are crowd-made, so the odd line can be timed a little off; the app can't hear the music once it's running, so a KTV version played faster or slower needs a re-tap; the free AI can be busy for a few seconds.
+**Limits worth knowing:** lyrics are crowd-made, so the odd line can be timed a little off; the app can't hear the music once it's running, so a KTV version played faster or slower needs a re-tap; the free AI can be busy; add a free Gemini key in Settings, or tap **Try with Puter**, as backups.
 
 ---
 

@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.9.7';
+const VERSION = '0.9.9';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -102,7 +102,7 @@ function toWords(text, ct) {
   return units;
 }
 // Fixes for readings pinyin-pro gets wrong in lyrics; users can still override any syllable.
-try { window.pinyinPro && window.pinyinPro.customPinyin && window.pinyinPro.customPinyin({ '系上': 'jì shàng', '背着': 'bēi zhe', '只为': 'zhǐ wèi', '只为你': 'zhǐ wèi nǐ', '只有': 'zhǐ yǒu', '一只': 'yì zhī', '为你': 'wèi nǐ', '为了': 'wèi le', '为谁': 'wèi shéi' }); } catch (e) {}
+try { window.pinyinPro && window.pinyinPro.customPinyin && window.pinyinPro.customPinyin({ '系上': 'jì shàng', '背着': 'bēi zhe', '只为': 'zhǐ wèi', '只为你': 'zhǐ wèi nǐ', '只有': 'zhǐ yǒu', '一只': 'yì zhī', '为你': 'wèi nǐ', '为了': 'wèi le', '为谁': 'wèi shéi', '卡路里': 'kǎ lù lǐ' }); } catch (e) {}
 const simp = t => (prefs.script === 'simp' && window.toSimplified && detectLang(t) === 'zh') ? window.toSimplified(t).replace(/著(?![名作称述录书者])/g, '着') : String(t ?? '');
 function pyText(t) {
   const P = PP(); t = String(t ?? ''); if (![...t].some(isZh) || KANA.test(t)) return '';
@@ -592,6 +592,8 @@ $('#segScript').onclick = e => { const b = e.target.closest('button'); if (!b ||
 $('#segSung').onclick = e => { const b = e.target.closest('button'); if (!b || !song) return; const on = b.dataset.v === 'yue'; if (on === !!song.yue) return; store.set('yue.' + song.key, on); closeAll(); toast(on ? 'Cantonese readings (jyutping)' : 'Mandarin readings (pinyin)'); reopenKeep(); };
 $('#size').oninput = e => { prefs.size = +e.target.value; store.set('size2', prefs.size); applyPrefs(); };
 $('#size').onchange = () => { if (cur >= 0) scrollToLine(cur, true); };
+$('#gemKey').value = store.get('gemkey', '');
+$('#bGemSave').onclick = () => { const v = $('#gemKey').value.trim(); store.set('gemkey', v); toast(v ? 'Gemini key saved on this phone' : 'Gemini key removed'); };
 $('#bReset').onclick = () => { if (!song) return; store.set(offKey(), 0); $('#offV').textContent = '0.0 s'; toast('Offset reset'); };
 $('#bFav').onclick = () => {
   if (!song) return; let f = store.get('fav', []); const on = !f.some(x => x.key === song.key);
@@ -601,26 +603,61 @@ $('#bFav').onclick = () => {
 /* ---------- song info: about (Wikipedia), translate lyrics, search meaning, other versions ---------- */
 // Short AI write-up of the song's meaning (Pollinations: free, no key; anonymous use is rate-limited).
 // Grounded on the song's own lyrics so it doesn't invent a story.
+function aboutPrompt(s) {
+  const lyr = s.lines.filter(l => !l.credit).map(l => l.text).join(' / ').slice(0, 450);
+  return 'In 3 or 4 short sentences of simple English, explain what the song "' + simp(s.title) + '" by ' + (s.artist || 'unknown') +
+    ' is about and the feeling it expresses, for a karaoke singer who cannot read Chinese. Base it on these lyrics. No quotes from the lyrics, no markdown, no intro phrase. Lyrics: ' + lyr;
+}
 async function aiAbout(s, onWait) {
   const lyr = s.lines.filter(l => !l.credit).map(l => l.text).join(' / ').slice(0, 450);
-  const prompt = 'In 3 or 4 short sentences of simple English, explain what the song "' + simp(s.title) + '" by ' + (s.artist || 'unknown') +
-    ' is about and the feeling it expresses, for a karaoke singer who cannot read Chinese. Base it on these lyrics. No quotes from the lyrics, no markdown, no intro phrase. Lyrics: ' + lyr;
+  const prompt = aboutPrompt(s);
   return aiText(prompt, onWait, t => t.length > 40 && t.length < 2000);
 }
 // Free AI text (Pollinations, no key). Anonymous use allows ~1 request per 15s, so on failure wait and try once more.
-async function aiText(prompt, onWait, ok) {
-  for (const [k, base] of [[0, 'https://text.pollinations.ai/'], [1, 'https://gen.pollinations.ai/text/'], [2, 'https://text.pollinations.ai/']]) {
-    if (k === 2) { if (onWait) onWait(); await new Promise(r => setTimeout(r, 16000)); }
+// Free AI, three providers, tried in order:
+//  1. Pollinations: no key, no account (anonymous limit ~1 request / 15 s)
+//  2. Google Gemini: only if you've added your own free key in Settings (kept on this phone)
+//  3. Puter: no key; asks you to sign in to a free Puter account, so it only runs when you tap "Try with Puter"
+async function pollinations(prompt, base) {
+  const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 25000);
+  try { log('ai pollinations', base); const r = await fetch(base + encodeURIComponent(prompt) + '?model=openai', { signal: ctl.signal }); const t = (await r.text()).trim(); return r.ok && !/^\s*[{<]/.test(t) ? t : (log('ai bad reply', r.status, t.slice(0, 80)), null); }
+  catch (e) { log('ai failed', base, e.name); return null; } finally { clearTimeout(to); }
+}
+async function gemini(prompt) {
+  const key = store.get('gemkey', ''); if (!key) return null;
+  for (const model of ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash']) {
     const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 25000);
     try {
-      log('ai', base);
-      const r = await fetch(base + encodeURIComponent(prompt) + '?model=openai', { signal: ctl.signal });
-      const t = (await r.text()).trim();
-      if (r.ok && !/^\s*[{<]/.test(t) && ok(t)) return t;
-      log('ai bad reply', r.status, t.slice(0, 80));
-    } catch (e) { log('ai failed', base, e.name); } finally { clearTimeout(to); }
+      log('ai gemini', model);
+      const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(key),
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }), signal: ctl.signal });
+      const j = await r.json();
+      const t = j && j.candidates && j.candidates[0] && j.candidates[0].content && (j.candidates[0].content.parts || []).map(x => x.text || '').join('').trim();
+      if (r.ok && t) return t;
+      log('ai gemini error', r.status, JSON.stringify(j).slice(0, 120));
+      if (r.status === 400 || r.status === 403) return null;          // bad key: no point trying other models
+    } catch (e) { log('ai gemini failed', e.name); } finally { clearTimeout(to); }
   }
   return null;
+}
+let puterLoading = null;
+async function puterAI(prompt) {
+  try {
+    await (puterLoading ||= new Promise((ok, bad) => { const sc = document.createElement('script'); sc.src = 'https://js.puter.com/v2/'; sc.onload = ok; sc.onerror = bad; document.head.appendChild(sc); }));
+    log('ai puter');
+    const r = await window.puter.ai.chat(prompt);
+    const c = typeof r === 'string' ? r : r && r.message && r.message.content;
+    const t = (Array.isArray(c) ? c.map(x => x.text || '').join('') : String(c || r || '')).trim();
+    return t || null;
+  } catch (e) { log('ai puter failed', e && (e.message || e)); return null; }
+}
+async function aiText(prompt, onWait, ok) {
+  const good = t => t && ok(t) ? t : null;
+  let t = good(await pollinations(prompt, 'https://text.pollinations.ai/')) || good(await pollinations(prompt, 'https://gen.pollinations.ai/text/')) || good(await gemini(prompt));
+  if (t) return t;
+  if (onWait) onWait();
+  await new Promise(r => setTimeout(r, 16000));                    // Pollinations' free limit: wait and try once more
+  return good(await pollinations(prompt, 'https://text.pollinations.ai/'));
 }
 // Pinyin initials → song titles. The AI suggests; every title is checked against the initials here, so wrong guesses never show.
 async function aiInitials(q, onWait) {
@@ -646,7 +683,14 @@ async function loadAbout(s) {
   const key = 'about3.' + s.key, cached = store.get(key, null), box = $('#about');
   const show = t => {
     box.innerHTML = t ? t.split(/\n+/).slice(0, 3).map(x => '<p>' + esc(x) + '</p>').join('') + '<p class="src">Written by AI from the lyrics, so it may not be exact.</p>'
-                      : '<p class="muted">No write-up available for this song right now.</p>';
+                      : '<p class="muted">No write-up available for this song right now.</p><div class="two"><button class="btn ghost" id="bPuter">Try with Puter</button><button class="btn ghost" id="bGemKey">Add Gemini key</button></div><p class="note">Puter is free but asks you to sign in once. A Gemini key is free from Google and makes this faster.</p>';
+    const bp = $('#bPuter'); if (bp) bp.onclick = async () => {
+      box.innerHTML = '<p class="muted">Asking Puter… (a sign-in window may open)</p>';
+      const t2 = await puterAI(aboutPrompt(s));
+      if (t2 && t2.length > 40) { store.set(key, t2); if (song && song.key === s.key) show(t2); }
+      else box.innerHTML = '<p class="muted">Puter didn’t answer. Try again later.</p>';
+    };
+    const bg = $('#bGemKey'); if (bg) bg.onclick = () => { openSettings(); setTimeout(() => $('#gemKey').focus(), 300); };
   };
   if (cached) return show(cached);
   box.innerHTML = '<p class="muted">Writing a short summary…</p>';

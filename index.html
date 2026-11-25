@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="app.css?v=0.9.7">
+<link rel="stylesheet" href="app.css?v=0.9.9">
 </head>
 <body>
 <div class="app">
@@ -79,6 +79,9 @@
   <h3>Characters</h3><div class="seg" id="segScript"><button data-v="simp">Simplified 简体</button><button data-v="orig">As written</button></div>
   <h3>Theme</h3><div class="seg" id="segSkin"><button data-v="dark">Dark</button><button data-v="light">Light</button><button data-v="light dark">Auto</button></div>
   <div id="offRow"><h3>Sync offset for this song</h3><div class="row"><b id="offV">0.0 s</b><span class="muted">Saved per song</span><button class="link" id="bReset">Reset</button></div></div>
+  <h3>Backup AI (optional)</h3>
+  <p class="note" style="margin-top:0">Song summaries and initials search use a free AI that can get busy. Add a free Google Gemini key as a backup: get one at <a class="link" style="padding:0" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. It stays on this phone.</p>
+  <div class="row" style="margin-top:8px"><input class="field" id="gemKey" type="password" autocomplete="off" placeholder="Paste Gemini API key"><button class="btn sm" id="bGemSave">Save</button></div>
   <p class="note">Wrong pinyin? Press and hold a syllable to pick another reading (多音字). Your fix is saved for that song.</p>
   <button class="link" id="bInfo" style="padding-left:0">What do the tags mean?</button> <button class="link" id="bHowListen2">Shortcut setup</button>
 </section>
@@ -141,9 +144,9 @@
 <div class="pop" id="pop"><p>Reading for <b id="popH"></b></p><div class="chips" id="popC"></div></div>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="vendor/pinyin-pro.js?v=0.9.7"></script>
-<script src="vendor/t2s.js?v=0.9.7"></script>
-<script src="vendor/catalog.js?v=0.9.7"></script>
-<script src="app.js?v=0.9.7"></script>
+<script src="vendor/pinyin-pro.js?v=0.9.9"></script>
+<script src="vendor/t2s.js?v=0.9.9"></script>
+<script src="vendor/catalog.js?v=0.9.9"></script>
+<script src="app.js?v=0.9.9"></script>
 </body>
 </html>
