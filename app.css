@@ -1,4 +1,4 @@
-/* Pinyin Karaoke: aubergine night stage, one lantern-red accent, system fonts (SF for tone marks, PingFang for hanzi). */
+/* ChàngAlong: aubergine night stage, one lantern-red accent, system fonts (SF for tone marks, PingFang for hanzi). */
 :root{color-scheme:dark;--bg:light-dark(#fbf6f1,#140d1c);--sf:light-dark(#fff,#21172a);--sf2:light-dark(#f1e9e2,#2d2138);--ink:light-dark(#22172a,#f7efe8);--dim:light-dark(#8f8494,#8d8197);--faint:light-dark(#ddd3d6,#463a52);--hl:light-dark(#e3401f,#ff6a3d);--fs:30px;
   --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Noto Sans",sans-serif;--han:"PingFang SC","PingFang TC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif}
 *{box-sizing:border-box;min-width:0;-webkit-tap-highlight-color:transparent}
