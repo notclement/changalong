@@ -51,7 +51,7 @@ Suggestions come instantly from your recent songs, favourites and a built-in lis
 
 | Action | How |
 | --- | --- |
-| Sync | Tap the line being sung, or "Tap as the next line starts". If one line in the lyrics file is timed wrong, tap it when it's really sung, then **Only this line**: the fix is saved for that song |
+| Sync | Tap the line being sung, or "Tap as the next line starts" |
 | Lyrics behind / ahead | Behind (+0.5 s) / Ahead (−0.5 s), remembered per song |
 | Fix a wrong reading (多音字) | Press and hold the syllable, pick the reading |
 | Other versions (live, remaster) | Tap the song title |
