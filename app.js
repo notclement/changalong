@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.8.9';
+const VERSION = '0.9.0';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -389,7 +389,10 @@ function fillLine(i) { const el = $('#stage').children[i]; if (el) for (const s 
 function scrollToLine(i, instant) {
   const el = $('#stage').children[i]; if (!el) return; const st = $('#stage');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  st.scrollTo({ top: el.offsetTop - st.clientHeight * 0.36, behavior: instant || reduce ? 'auto' : 'smooth' });
+  // Current line sits in the upper part of the screen, so the next line is visible below it;
+  // long (wrapping) lines go higher still so the whole line and what follows fit.
+  const H = st.clientHeight, long = el.offsetHeight > H * 0.22;
+  st.scrollTo({ top: el.offsetTop - Math.max(56, H * (long ? 0.12 : 0.24)), behavior: instant || reduce ? 'auto' : 'smooth' });
 }
 let lastBanner = null;
 function banner(what) {
@@ -526,9 +529,8 @@ $('#bBack').onclick = () => { follow = true; followT = 0; $('#bBack').classList.
 function open(id) { closeAll(); $('#veil').classList.add('show'); $(id).classList.add('show'); }
 function closeAll() { $('#veil').classList.remove('show'); for (const s of document.querySelectorAll('.sheet')) s.classList.remove('show'); }
 $('#veil').onclick = closeAll;
-// Bottom sheets: × button, or swipe down to close (from the handle, or anywhere once scrolled to the top).
+// Bottom sheets: swipe down to close (from the handle, or anywhere once scrolled to the top).
 for (const sh of document.querySelectorAll('.sheet')) {
-  sh.querySelector('.xclose').onclick = closeAll;
   let y0 = null, dy = 0, tStart = 0;
   sh.addEventListener('touchstart', e => {
     const onHandle = e.touches[0].clientY - sh.getBoundingClientRect().top < 40;

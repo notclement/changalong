@@ -64,7 +64,7 @@ textarea.field{min-height:160px;font:15px/1.5 var(--han);resize:vertical;backgro
 .prog{grid-column:1/-1;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--dim);font-variant-numeric:tabular-nums;padding:2px 6px 0}
 .prog input{flex:1;accent-color:var(--hl);height:28px}
 .stage-wrap{position:relative;overflow:hidden;min-height:0}
-#stage{unicode-bidi:plaintext;position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding:0 max(18px,calc((100% - var(--wide))/2 + 18px));-webkit-mask-image:linear-gradient(transparent,#000 16%,#000 74%,transparent);mask-image:linear-gradient(transparent,#000 16%,#000 74%,transparent);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#stage{unicode-bidi:plaintext;position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding:0 max(18px,calc((100% - var(--wide))/2 + 18px));-webkit-mask-image:linear-gradient(transparent,#000 8%,#000 78%,transparent);mask-image:linear-gradient(transparent,#000 8%,#000 78%,transparent);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 #stage::-webkit-scrollbar{display:none}
 #stage::before,#stage::after{content:"";display:block;height:42%}
 .ln{padding:12px 0;transition:opacity .3s,transform .3s;opacity:.4;transform-origin:left center;transform:scale(.84);display:flex;flex-wrap:wrap;column-gap:.3em;row-gap:2px;cursor:pointer}
@@ -135,9 +135,7 @@ textarea.field{min-height:160px;font:15px/1.5 var(--han);resize:vertical;backgro
 .grab{width:40px;height:5px;border-radius:9px;background:var(--faint);margin:0 auto 12px}
 .sheet::before{content:"";position:absolute;left:0;right:0;top:0;height:34px}
 .sheet.drag{transition:none}
-.xclose{position:absolute;top:8px;right:8px;width:44px;height:44px;display:grid;place-items:center;color:var(--dim);z-index:1}
-.xclose svg{width:18px;height:18px;padding:5px;box-sizing:content-box;border-radius:50%;background:var(--sf2);stroke-width:2.4}
-.sheet h2{padding-right:44px}
+
 .sheet h2{font-size:20px;margin:0 0 10px;line-height:1.2}
 .sheet h3{font-size:13px;color:var(--dim);font-weight:600;margin:18px 0 8px}
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--sf2);border-radius:12px;padding:3px}
