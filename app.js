@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.5.0';
+const VERSION = '0.5.1';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -100,11 +100,29 @@ async function findByMeta(title, artist) {
   return [];
 }
 
+
+/* ---------- scrolling text for header lines that don't fit ---------- */
+// html must already be escaped. A line wider than its box glides to the end and back, pausing at each end.
+function setLine(el, html) { el.classList.add('mqw'); el.innerHTML = '<span class="mq">' + html + '</span>'; fitLine(el); }
+function fitLine(el) {
+  const inner = el.firstElementChild; if (!inner || !el.clientWidth) return;
+  el.classList.remove('marq');
+  const over = inner.scrollWidth - el.clientWidth;
+  if (over > 4) {
+    el.style.setProperty('--mq', -(over + 8) + 'px');
+    el.style.setProperty('--mqd', (3 + over / 25).toFixed(1) + 's');
+    el.classList.add('marq');
+  }
+}
+const refitAll = () => document.querySelectorAll('.mqw').forEach(fitLine);
+addEventListener('resize', refitAll);
+
 /* ---------- views ---------- */
 function show(view) {
   $('#browse').hidden = view !== 'browse'; $('#sing').hidden = view !== 'sing';
   $('#nowbar').hidden = !(view === 'browse' && song);
-  if (song) $('#nowT').textContent = simp(song.title) + (song.artist ? ' · ' + simp(song.artist) : '');
+  if (song) setLine($('#nowT'), esc(simp(song.title) + (song.artist ? ' · ' + simp(song.artist) : '')));
+  requestAnimationFrame(refitAll);
   if (view === 'sing' && cur >= 0) requestAnimationFrame(() => scrollToLine(cur, true));
 }
 function resultRow(r, extra) {
@@ -197,10 +215,10 @@ function openRecord(rec, alts) {
   log('voices', song.duet ? JSON.stringify(names) || 'markers' : 'none');
   song.lines.forEach((l, i) => { const nx = song.lines[i + 1]; l.end = l.words ? Math.max(l.t + 0.3, l.u.at(-1).tm[1]) : (nx && nx.t - l.t < 8) ? nx.t - 0.15 : l.t + Math.min(5, 0.42 * l.u.length + 0.8); });
   if (song.timed && !song.dur) song.dur = song.lines.at(-1).t + 10;
-  $('#sT').textContent = simp(song.title) || 'Lyrics';
+  setLine($('#sT'), esc(simp(song.title) || 'Lyrics'));
   const syncTag = !song.timed ? 'Lyrics only' : song.wordSync ? 'Word synced' : 'Synced';
-  $('#sA').textContent = simp(song.artist || '') + (pyText(simp(song.artist)) ? ' (' + pyText(simp(song.artist)) + ')' : '') + (song.alts && song.alts.length > 1 ? ' · ' + song.alts.length + ' versions' : '');
-  $('#sP').innerHTML = esc(pyText(simp(song.title))) + ' <span class="tag">' + syncTag + '</span>';
+  setLine($('#sA'), esc(simp(song.artist || '') + (pyText(simp(song.artist)) ? ' (' + pyText(simp(song.artist)) + ')' : '') + (song.alts && song.alts.length > 1 ? ' · ' + song.alts.length + ' versions' : '')));
+  setLine($('#sP'), esc(pyText(simp(song.title))) + ' <span class="tag">' + syncTag + '</span>');
   $('#bFav').classList.toggle('on', store.get('fav', []).some(f => f.key === song.key));
   $('#tEnd').textContent = song.timed ? fmt(song.dur) : '—';
   $('#seek').disabled = !song.timed;
