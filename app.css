@@ -129,12 +129,13 @@ textarea.field{min-height:160px;font:15px/1.5 var(--han);resize:vertical;backgro
 .nudge{display:flex;flex-direction:column;align-items:center;min-height:56px;justify-content:center;border-radius:14px;background:var(--sf);font-weight:600}
 .nudge small{font-size:12px;color:var(--dim);font-weight:400}
 .mid{display:grid;justify-items:center;position:relative}
-.mic{width:66px;height:66px;border-radius:50%;background:var(--hl);color:#fff;display:grid;place-items:center;box-shadow:0 8px 26px color-mix(in srgb,var(--hl) 40%,transparent)}
-.mic svg{width:28px;height:28px}
+.mic{width:84px;height:84px;border-radius:50%;background:var(--hl);color:#fff;display:grid;place-items:center;box-shadow:0 8px 26px color-mix(in srgb,var(--hl) 40%,transparent)}
+.mic svg{width:36px;height:36px}
 .pause{width:44px;height:44px;border-radius:50%;background:var(--sf);border:1px solid var(--faint);display:grid;place-items:center}
 .pause svg{width:20px;height:20px}.pause.on{background:var(--hl);border-color:var(--hl);color:#fff}
 .mid-t{font-size:12px;color:var(--dim);position:absolute;top:100%;margin-top:4px;white-space:nowrap}
-.dock{padding-bottom:18px}
+.dock{padding-bottom:20px}
+.mid-t{font-size:13px}
 #bHome{justify-self:start}
 
 /* sheets */
