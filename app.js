@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.7.1';
+const VERSION = '0.7.2';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -34,7 +34,7 @@ let song = null;          // {key,title,artist,album,dur,timed,lines,alts}
 let mode = 'idle';        // idle | wait | run | tap
 let cur = -1, base = 0, t0 = 0, running = false, ended = false, follow = true, followT = 0, seeking = false;
 let lastResults = [], paused = false, yueOn = false;
-const prefs = { mode: store.get('mode', 'm-both') === 'm-py' ? 'm-py' : 'm-both', size: store.get('size2', 38), script: store.get('script', 'simp'), skin: store.get('skin', 'dark') };
+const prefs = { mode: store.get('mode', 'm-both') === 'm-py' ? 'm-py' : 'm-both', size: store.get('size2', Math.round(Math.min(60, Math.max(34, Math.min(innerWidth, 900) / 10)))), script: store.get('script', 'simp'), skin: store.get('skin', 'dark') };
 
 /* ---------- LRC + pinyin ---------- */
 // Returns lines with optional per-character times (ct) from enhanced LRC word tags: [00:12.00]<00:12.00>你<00:12.40>好<00:13.00>
