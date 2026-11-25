@@ -73,6 +73,7 @@
 <section class="sheet" id="shSet" aria-label="Settings"><div class="grab"></div><h2>Display</h2>
   <h3>Show</h3><div class="seg" id="segMode"><button data-v="m-both">汉字 + pinyin</button><button data-v="m-py">Pinyin only</button></div>
   <h3>Text size</h3><div class="row"><span>A</span><input type="range" id="size" min="24" max="60" step="2" aria-label="Text size"><span class="bigA">A</span><span class="sample" id="sizeV"></span></div>
+  <div id="sungRow"><h3>This song is sung in</h3><div class="seg" id="segSung"><button data-v="cmn">Mandarin 普通话</button><button data-v="yue">Cantonese 粤语</button></div><p class="note">Cantonese shows jyutping (e.g. nei5 hou2: the number is the tone). Remembered for this song.</p></div>
   <h3>Characters</h3><div class="seg" id="segScript"><button data-v="simp">Simplified 简体</button><button data-v="orig">As written</button></div>
   <h3>Theme</h3><div class="seg" id="segSkin"><button data-v="dark">Dark</button><button data-v="light">Light</button><button data-v="light dark">Auto</button></div>
   <div id="offRow"><h3>Sync offset for this song</h3><div class="row"><b id="offV">0.0 s</b><span class="muted">Saved per song</span><button class="link" id="bReset">Reset</button></div></div>
@@ -109,6 +110,14 @@
     <dt><span class="tag">Word synced</span></dt><dd>Every word has its own start time. The highlight follows the real rhythm: it lingers on held notes and speeds through fast parts. Best experience.</dd>
     <dt><span class="tag">Synced</span></dt><dd>Only each line has a start time. Lines appear exactly on time, but the highlight sweeps evenly across the line, so it won't stretch on a long note.</dd>
     <dt><span class="tag">Lyrics only</span></dt><dd>No timing at all. Tap <b>Next line</b> as you sing to move along. Try <b>Other versions</b> (tap the song title) for a synced one.</dd>
+  </dl>
+  <h3>Other tags</h3>
+  <dl class="tags">
+    <dt><span class="tag">Duet</span></dt><dd>The lyrics mark who sings each line, so lines are colour-coded (see below).</dd>
+    <dt><span class="tag">Live</span> <span class="tag">Remix</span></dt><dd>A different version from the studio one (also Acoustic, Instrumental, Cover). Its timing may not match what the KTV plays.</dd>
+    <dt><span class="tag">繁→简</span></dt><dd>The lyrics were in Traditional characters and were converted to Simplified. Turn this off in Settings → Characters.</dd>
+    <dt><span class="tag">Cantonese</span></dt><dd>Showing jyutping instead of pinyin, for songs sung in Cantonese. Switch in Settings.</dd>
+    <dt><span class="tag">No pinyin</span></dt><dd>The song isn't in Chinese, so it's shown as plain text (also <span class="tag">Japanese</span> <span class="tag">Korean</span>).</dd>
   </dl>
   <h3>Colours in duets</h3>
   <dl class="tags">

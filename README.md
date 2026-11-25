@@ -36,6 +36,12 @@ Chinese songs get pinyin under every character; English words inside them are sh
 Songs in other languages (English, Japanese, Korean, Malay…) are shown as plain text with the same timing and highlight, tagged *No pinyin*, *Japanese* or *Korean*.
 Japanese is detected from kana, so its kanji never get Chinese pinyin or Simplified conversion.
 
+**Cantonese songs:** Settings → *This song is sung in* → Cantonese shows jyutping (e.g. nei5 hou2) instead of pinyin, remembered per song. Uses [to-jyutping](https://github.com/CanCLID/to-jyutping) (BSD-2-Clause), loaded only when needed.
+
+## Tags
+
+Grey tags by the title and in search results: **Word synced / Synced / Lyrics only** (timing), **Duet**, **Live / Remix / Acoustic / Instrumental / Cover** (version), **繁→简** (converted from Traditional), **Cantonese**, **No pinyin / Japanese / Korean**. Tap a tag in the lyric screen for explanations.
+
 ## Controls
 
 | Action | How |
@@ -53,6 +59,7 @@ Japanese is detected from kana, so its kanji never get Chinese pinyin or Simplif
 ## Development
 
 Static files only: `index.html`, `app.css`, `app.js`, `sw.js`, `manifest.webmanifest`.
+`vendor/to-jyutping.js` is to-jyutping 3.1.1 compiled from source into one browser file.
 `vendor/t2s.js` is a Traditional→Simplified converter built from OpenCC's TSCharacters/TSPhrases (Apache-2.0).
 `vendor/pinyin-pro.js` is pinyin-pro 3.29.5 (MIT), compiled from source and bundled as a single browser file.
 Bump `CACHE` in `sw.js` and `VERSION` in `app.js` on every release so phones pick up the new files.

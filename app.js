@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.6.0';
+const VERSION = '0.7.0';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -33,7 +33,7 @@ const PP = () => (window.pinyinPro && window.pinyinPro.pinyin) ? window.pinyinPr
 let song = null;          // {key,title,artist,album,dur,timed,lines,alts}
 let mode = 'idle';        // idle | wait | run | tap
 let cur = -1, base = 0, t0 = 0, running = false, ended = false, follow = true, followT = 0, seeking = false;
-let lastResults = [], paused = false;
+let lastResults = [], paused = false, yueOn = false;
 const prefs = { mode: store.get('mode', 'm-both') === 'm-py' ? 'm-py' : 'm-both', size: store.get('size2', 38), script: store.get('script', 'simp'), skin: store.get('skin', 'dark') };
 
 /* ---------- LRC + pinyin ---------- */
@@ -74,7 +74,8 @@ function parseLRC(txt) {
 }
 function toUnits(text, ct) {
   const P = PP(); let arr = null;
-  if (P) { try { arr = P.pinyin(text, { type: 'array', toneType: 'symbol', toneSandhi: true, nonZh: 'removed' }); } catch (e) { log('pinyin failed', e); } }
+  if (yueOn && window.ToJyutping) { try { arr = window.ToJyutping.getJyutpingList(text).filter(([c]) => isZh(c)).map(x => x[1] || '?'); } catch (e) { log('jyutping failed', e); } }
+  else if (P) { try { arr = P.pinyin(text, { type: 'array', toneType: 'symbol', toneSandhi: true, nonZh: 'removed' }); } catch (e) { log('pinyin failed', e); } }
   const units = []; let k = 0, buf = '', bt = null, idx = 0;
   const flush = () => { if (buf.trim()) units.push({ h: buf.trim(), p: buf.trim(), zh: false, tm: bt }); buf = ''; bt = null; };
   for (const ch of text) {
@@ -104,11 +105,15 @@ function toWords(text, ct) {
 try { window.pinyinPro && window.pinyinPro.customPinyin && window.pinyinPro.customPinyin({ '系上': 'jì shàng', '背着': 'bēi zhe', '只为': 'zhǐ wèi', '只为你': 'zhǐ wèi nǐ', '只有': 'zhǐ yǒu', '一只': 'yì zhī', '为你': 'wèi nǐ', '为了': 'wèi le', '为谁': 'wèi shéi' }); } catch (e) {}
 const simp = t => (prefs.script === 'simp' && window.toSimplified && detectLang(t) === 'zh') ? window.toSimplified(t).replace(/著(?![名作称述录书者])/g, '着') : String(t ?? '');
 function pyText(t) {
-  const P = PP(); t = String(t ?? ''); if (!P || ![...t].some(isZh) || KANA.test(t)) return '';
+  const P = PP(); t = String(t ?? ''); if (![...t].some(isZh) || KANA.test(t)) return '';
+  if (yueOn && window.ToJyutping) { try { return window.ToJyutping.getJyutpingList(t).map(([c, j]) => j || (/\s/.test(c) ? ' ' : c)).join(' ').replace(/\s+/g, ' ').trim(); } catch (e) { return ''; } }
+  if (!P) return '';
   try { return P.pinyin(t, { toneType: 'symbol', toneSandhi: true, nonZh: 'consecutive' }).replace(/\s+/g, ' ').trim(); } catch (e) { return ''; }
 }
 const tpRow = t => { const p = pyText(simp(t)); return p ? '<div class="tp">' + esc(p) + '</div>' : ''; };
-function readings(ch) { const P = PP(); if (!P) return []; try { return P.pinyin(ch, { multiple: true, type: 'array', toneType: 'symbol' }); } catch (e) { return []; } }
+function readings(ch) {
+  if (yueOn && window.ToJyutping) { try { return (window.ToJyutping.getJyutpingCandidates(ch)[0] || [ch, []])[1]; } catch (e) { return []; } }
+  const P = PP(); if (!P) return []; try { return P.pinyin(ch, { multiple: true, type: 'array', toneType: 'symbol' }); } catch (e) { return []; } }
 
 /* ---------- LRCLIB ---------- */
 async function api(path) {
@@ -156,7 +161,7 @@ function show(view) {
 }
 function resultRow(r, extra) {
   const synced = !!r.syncedLyrics;
-  return '<button class="res" data-id="' + esc(r.id) + '"><span class="art">' + esc(simp((r.trackName || '?').trim().charAt(0))) + '</span><span class="rm"><div class="t">' + esc(simp(r.trackName)) + '</div>' + tpRow(r.trackName) + '<div class="a">' + esc(simp(r.artistName)) + (r.albumName ? ' · ' + esc(r.albumName) : '') + (r.duration ? ' · ' + fmt(r.duration) : '') + '</div></span><span class="badge">' + (extra || (synced ? (/<\d+:\d+/.test(r.syncedLyrics) ? 'Word synced' : 'Synced') : 'Lyrics only')) + '</span></button>';
+  return '<button class="res" data-id="' + esc(r.id) + '"><span class="art">' + esc(simp((r.trackName || '?').trim().charAt(0))) + '</span><span class="rm"><div class="t">' + esc(simp(r.trackName)) + '</div>' + tpRow(r.trackName) + '<div class="a">' + esc(simp(r.artistName)) + (r.albumName ? ' · ' + esc(r.albumName) : '') + (r.duration ? ' · ' + fmt(r.duration) : '') + '</div></span><span class="badges"><span class="badge">' + (extra || (synced ? (/<\d+:\d+/.test(r.syncedLyrics) ? 'Word synced' : 'Synced') : 'Lyrics only')) + '</span>' + [versionTag(r.trackName + ' ' + (r.albumName || '')), DUET_RX.test(r.syncedLyrics || r.plainLyrics || '') ? 'Duet' : ''].filter(Boolean).map(t => '<span class="badge">' + t + '</span>').join('') + '</span></button>';
 }
 function renderResults(list, q) {
   lastResults = list;
@@ -210,6 +215,17 @@ function splitVoice(text, names, bare) {
   return null;
 }
 
+/* ---------- Cantonese (jyutping), loaded only when a song is switched to it ---------- */
+let jpLoading = null;
+function loadJyutping() {
+  if (window.ToJyutping) return Promise.resolve();
+  return jpLoading ||= new Promise((ok, bad) => { const sc = document.createElement('script'); sc.src = 'vendor/to-jyutping.js'; sc.onload = ok; sc.onerror = bad; document.head.appendChild(sc); });
+}
+const VERSION_RX = [[/伴奏|instrumental|karaoke|ktv|off ?vocal/i, 'Instrumental'], [/live|現場|现场|演唱會|演唱会|concert/i, 'Live'], [/remix|mix\b|DJ/i, 'Remix'], [/acoustic|不插電|不插电|unplugged/i, 'Acoustic'], [/cover|翻唱/i, 'Cover']];
+const versionTag = t => { for (const [rx, name] of VERSION_RX) if (rx.test(t || '')) return name; return ''; };
+const DUET_RX = /^(?:\[[^\]]*\])+\s*[(（【\[]?\s*(?:男|女|合|M|F)\s*[)）】\]]?\s*[:： ]/m;
+const tagHtml = list => list.filter(Boolean).map(t => '<span class="tag">' + esc(t) + '</span>').join(' ');
+
 /* ---------- load a song ---------- */
 function keyOf(r) { return 'l' + r.id; }
 function cacheSong(rec) { store.set('song.' + rec.key, rec); }
@@ -226,9 +242,12 @@ function openRecord(rec, alts) {
   log('open', rec.key, rec.title, rec.artist);
   cacheSong(rec); rememberHistory(rec);
   const lang = detectLang(rec.lrc.replace(/\[[^\]]*\]|<[^>]*>/g, ''));
-  const parsed = parseLRC(lang === 'zh' ? simp(rec.lrc) : rec.lrc);
-  const ov = store.get('ov.' + rec.key, {});
-  song = { ...rec, lang, timed: parsed.timed, alts: alts || null };
+  yueOn = lang === 'zh' && store.get('yue.' + rec.key, false);
+  if (yueOn && !window.ToJyutping) { return loadJyutping().then(() => openRecord(rec, alts)).catch(() => { toast('Cantonese readings failed to load'); store.set('yue.' + rec.key, false); openRecord(rec, alts); }); }
+  const converted = lang === 'zh' ? simp(rec.lrc) : rec.lrc;
+  const parsed = parseLRC(converted);
+  const ov = store.get(ovKeyFor(rec.key), {});
+  song = { ...rec, lang, yue: yueOn, toSimp: converted !== rec.lrc, timed: parsed.timed, alts: alts || null };
   const names = {}; let voice = null; const bare = bareMarkers(parsed.lines);
   song.lines = parsed.lines.map((l, i) => {
     let text = l.text, credit = false, ct = l.ct;
@@ -249,7 +268,8 @@ function openRecord(rec, alts) {
   setLine($('#sT'), esc(simp(song.title) || 'Lyrics'));
   const syncTag = !song.timed ? 'Lyrics only' : song.wordSync ? 'Word synced' : 'Synced';
   setLine($('#sA'), esc(simp(song.artist || '') + (pyText(simp(song.artist)) ? ' (' + pyText(simp(song.artist)) + ')' : '') + (song.alts && song.alts.length > 1 ? ' · ' + song.alts.length + ' versions' : '')));
-  setLine($('#sP'), (lang === 'zh' ? esc(pyText(simp(song.title))) : '<span class="tag">' + LANG_TAG[lang] + '</span>') + ' <span class="tag">' + syncTag + '</span>');
+  const tags = [lang === 'zh' ? (song.yue ? 'Cantonese' : '') : LANG_TAG[lang], syncTag, song.duet ? 'Duet' : '', versionTag(song.title + ' ' + (song.album || '')), song.toSimp ? '繁→简' : ''];
+  setLine($('#sP'), (lang === 'zh' ? esc(pyText(simp(song.title))) + ' ' : '') + tagHtml(tags));
   $('#bFav').classList.toggle('on', store.get('fav', []).some(f => f.key === song.key));
   $('#tEnd').textContent = song.timed ? fmt(song.dur) : '—';
   $('#seek').disabled = !song.timed;
@@ -303,6 +323,7 @@ function banner(what) {
 const now = () => running ? base + (performance.now() - t0) / 1000 : base;
 function setTime(t) { base = t; t0 = performance.now(); }
 function startAt(t) { setTime(t); running = true; setPaused(false); ended = false; mode = 'run'; banner(''); applyPrefs(); follow = true; $('#bBack').classList.remove('show'); }
+const ovKeyFor = k => 'ov.' + k + (yueOn ? '.yue' : '');
 const offKey = () => 'off.' + song.key;
 const offset = () => song ? store.get(offKey(), 0) : 0;
 
@@ -399,7 +420,7 @@ function openReading(u) {
   $('#popC').onclick = ev => {
     const b = ev.target.closest('button'); if (!b) return;
     unit.p = b.textContent; unit.fix = true;
-    const ov = store.get('ov.' + song.key, {}); ov[i + ':' + j] = unit.p; store.set('ov.' + song.key, ov);
+    const ov = store.get(ovKeyFor(song.key), {}); ov[i + ':' + j] = unit.p; store.set(ovKeyFor(song.key), ov);
     u.querySelector('b').textContent = unit.p; u.classList.add('fix'); pop.classList.remove('show');
     toast('Saved ' + unit.h + ' → ' + unit.p); log('override', song.key, i, j, unit.p);
   };
@@ -420,11 +441,18 @@ function open(id) { closeAll(); $('#veil').classList.add('show'); $(id).classLis
 function closeAll() { $('#veil').classList.remove('show'); for (const s of document.querySelectorAll('.sheet')) s.classList.remove('show'); }
 $('#veil').onclick = closeAll;
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeAll(); $('#pop').classList.remove('show'); } });
-const openSettings = () => { $('#offRow').hidden = !(song && song.timed); $('#offV').textContent = offset().toFixed(1) + ' s'; open('#shSet'); };
+const openSettings = () => { $('#sungRow').hidden = !(song && song.lang === 'zh'); for (const b of document.querySelectorAll('#segSung button')) b.setAttribute('aria-pressed', (b.dataset.v === 'yue') === !!(song && song.yue)); $('#offRow').hidden = !(song && song.timed); $('#offV').textContent = offset().toFixed(1) + ' s'; open('#shSet'); };
 $('#bSet1').onclick = openSettings; $('#bSet2').onclick = openSettings;
 $('#segMode').onclick = e => { const b = e.target.closest('button'); if (!b) return; prefs.mode = b.dataset.v; store.set('mode', prefs.mode); applyPrefs(); if (cur >= 0) scrollToLine(cur, true); };
 $('#segSkin').onclick = e => { const b = e.target.closest('button'); if (!b) return; prefs.skin = b.dataset.v; store.set('skin', prefs.skin); applyPrefs(); };
-$('#segScript').onclick = e => { const b = e.target.closest('button'); if (!b || b.dataset.v === prefs.script) return; prefs.script = b.dataset.v; store.set('script', prefs.script); applyPrefs(); renderLists(); if (song) { const keep = { t: now(), mode, cur }; const rec = store.get('song.' + song.key, null); if (rec) { openRecord(rec, song.alts); if (keep.mode === 'run') { startAt(keep.t); } } } };
+function reopenKeep() {
+  if (!song) return; const keep = { t: now(), mode, alts: song.alts }; const rec = store.get('song.' + song.key, null); if (!rec) return;
+  const resume = () => { if (keep.mode === 'run' && song && song.key === rec.key && mode !== 'run') startAt(keep.t); };
+  const r = openRecord(rec, keep.alts);
+  if (r && r.then) r.then(resume); else resume();
+}
+$('#segScript').onclick = e => { const b = e.target.closest('button'); if (!b || b.dataset.v === prefs.script) return; prefs.script = b.dataset.v; store.set('script', prefs.script); applyPrefs(); renderLists(); reopenKeep(); };
+$('#segSung').onclick = e => { const b = e.target.closest('button'); if (!b || !song) return; const on = b.dataset.v === 'yue'; if (on === !!song.yue) return; store.set('yue.' + song.key, on); closeAll(); toast(on ? 'Cantonese readings (jyutping)' : 'Mandarin readings (pinyin)'); reopenKeep(); };
 $('#size').oninput = e => { prefs.size = +e.target.value; store.set('size2', prefs.size); applyPrefs(); };
 $('#size').onchange = () => { if (cur >= 0) scrollToLine(cur, true); };
 $('#bReset').onclick = () => { if (!song) return; store.set(offKey(), 0); $('#offV').textContent = '0.0 s'; toast('Offset reset'); };
