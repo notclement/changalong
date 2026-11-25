@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="app.css?v=1.1.2">
+<link rel="stylesheet" href="app.css?v=1.1.3">
 </head>
 <body>
 <div class="app">
@@ -56,7 +56,7 @@
       <button class="back" id="bBack">Back to current line</button>
     </main>
     <footer class="dock-wrap">
-      <button class="tap" id="bTap">Tap as the next line starts</button>
+      <button class="tap tb" id="bTap" aria-label="Tap as the next line starts"><span class="tap-hint" id="tapH">Tap when the next line starts</span><span class="tap-pad"><svg viewBox="0 0 24 24"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-1.5a1.5 1.5 0 0 1 3 0V11m0-1a1.5 1.5 0 0 1 3 0v4.5c0 3.6-2.4 6.5-6 6.5-2.6 0-4-1.2-5.2-3.2L4.6 14a1.5 1.5 0 0 1 2.4-1.8L9 14.5"/></svg><b id="tapL">Tap</b></span></button>
       <div class="dock">
         <button class="nudge" id="bBehind" aria-label="Lyrics are behind the singer: jump ahead half a second">Behind<small>+0.5s</small></button>
         <div class="mid"><a class="mic" id="bListen2" href="shortcuts://run-shortcut?name=ChangAlong" aria-label="Listen for the next song"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></a><div class="mid-t" id="midT">Next song</div></div>
@@ -87,7 +87,7 @@
 </section>
 
 <section class="sheet" id="shVer" aria-label="Song info"><div class="grab"></div>
-  <h2 id="iT"></h2><div class="ip" id="iP"></div><div class="ia" id="iA"></div>
+  <h2 id="iT"></h2><div class="ip" id="iP"></div><div class="ia" id="iA"></div><div class="itags" id="iTags"></div>
   <h3>What it's about</h3><div id="about" class="about"></div>
   <a class="btn ghost" id="aTrans" target="_blank" rel="noopener" style="margin-top:14px">Translate the lyrics</a>
   <div id="verList" hidden></div></section>
@@ -138,10 +138,10 @@
 <div class="pop" id="pop"><p>Reading for <b id="popH"></b></p><div class="chips" id="popC"></div></div>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="vendor/pinyin-pro.js?v=1.1.2"></script>
-<script src="vendor/t2s.js?v=1.1.2"></script>
-<script src="vendor/s2t.js?v=1.1.2"></script>
-<script src="vendor/catalog.js?v=1.1.2"></script>
-<script src="app.js?v=1.1.2"></script>
+<script src="vendor/pinyin-pro.js?v=1.1.3"></script>
+<script src="vendor/t2s.js?v=1.1.3"></script>
+<script src="vendor/s2t.js?v=1.1.3"></script>
+<script src="vendor/catalog.js?v=1.1.3"></script>
+<script src="app.js?v=1.1.3"></script>
 </body>
 </html>

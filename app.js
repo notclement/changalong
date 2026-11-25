@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '1.1.2';
+const VERSION = '1.1.3';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -214,8 +214,9 @@ function renderResults(list, q) {
 }
 function renderLists() {
   const hist = store.get('hist', []);
-  const row = s => '<button class="res" data-key="' + esc(s.key) + '"><span class="art">' + esc(simp((s.title || '?').charAt(0))) + '</span><span class="rm"><div class="t">' + esc(simp(s.title)) + '</div>' + tpRow(s.title) + '<div class="a">' + esc(withPy(s.artist || '')) + '</div></span>' + '</button>';
-  $('#lists').innerHTML = (hist.length ? '<div class="sec">Recent</div>' + hist.slice(0, 15).map(row).join('') : '');
+  const row = s => '<button class="res" data-key="' + esc(s.key) + '"><span class="art">' + esc(simp((s.title || '?').charAt(0))) + '</span><span class="rm"><div class="t">' + esc(simp(s.title)) + '</div>' + tpRow(s.title) + '<div class="a">' + esc(withPy(store.get('zhname.' + (s.artist || ''), '') || s.artist || '')) + '</div></span>' + '</button>' +
+    '<a class="spot" href="https://open.spotify.com/search/' + encodeURIComponent(simp(s.title) + ' ' + (s.artist || '')) + '" target="_blank" rel="noopener" aria-label="Find on Spotify"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg>Spotify</a>';
+  $('#lists').innerHTML = (hist.length ? '<div class="sec">Recent</div>' + hist.slice(0, 15).map(s => '<div class="resw">' + row(s) + '</div>').join('') : '');
 }
 /* ---------- local suggestions: popular KTV songs + your history, matched by pinyin initials or part of a title ---------- */
 let localIdx = null;
@@ -411,9 +412,11 @@ function openRecord(rec, alts) {
   if (song.timed && !song.dur) song.dur = song.lines.at(-1).t + 10;
   setLine($('#sT'), esc(simp(song.title) || 'Lyrics'));
   const syncTag = !song.timed ? 'Lyrics only' : song.wordSync ? 'Word synced' : 'Synced';
-  setLine($('#sA'), esc(simp(song.artist || '') + (pyText(simp(song.artist)) ? ' (' + pyText(simp(song.artist)) + ')' : '')));
+  setLine($('#sA'), esc(artistLine(song.artist)));
   const tags = [lang === 'zh' ? (song.yue ? 'Cantonese' : '') : LANG_TAG[lang], syncTag, song.duet ? 'Duet' : '', versionTag(song.title + ' ' + (song.album || '')), song.toSimp ? '繁→简' : ''];
-  setLine($('#sP'), (lang === 'zh' ? esc(pyText(simp(song.title))) + ' ' : '') + tagHtml(tags));
+  song.tags = tags;
+  setLine($('#sP'), lang === 'zh' ? esc(pyText(simp(song.title))) : '');
+  showSingerZh(song);
   $('#tEnd').textContent = song.timed ? fmt(song.dur) : '—';
   $('#seek').disabled = !song.timed;
   renderStage(); cur = -1; lastPrep = -1; ended = false; follow = true;
@@ -422,7 +425,7 @@ function openRecord(rec, alts) {
   requestAnimationFrame(() => scrollToLine(0, true));
   if (song.timed) { mode = 'wait'; running = false; base = 0; banner('wait'); }
   else { mode = 'tap'; running = false; go(0); fillLine(0); banner(''); }
-  $('#bTap').textContent = song.timed ? 'Tap as the next line starts' : 'Next line';
+  $('#tapL').textContent = song.timed ? 'Tap' : 'Next'; $('#tapH').textContent = song.timed ? 'Tap when the next line starts' : 'Show the next line'; tapSize();
   show('sing'); renderLists();
   if (!song.lines.length) banner('This entry has no lyric lines.');
 }
@@ -436,6 +439,7 @@ function renderStage() {
   applyPrefs();
 }
 function applyPrefs() {
+  tapSize();
   const st = $('#stage'); st.classList.remove('m-py', 'm-both'); st.classList.add(prefs.mode); st.classList.toggle('wait', mode === 'wait');
   document.documentElement.style.setProperty('--fs', prefs.size + 'px');
   document.documentElement.style.colorScheme = prefs.skin;
@@ -715,6 +719,25 @@ async function aiText(prompt, onWait, ok) {
   await new Promise(r => setTimeout(r, 16000));                    // Pollinations' free limit: wait and try once more
   return good(await pollinations(prompt, 'https://text.pollinations.ai/'));
 }
+// Tap button: big round button while not yet in sync (or for untimed lyrics), small once the song is following along.
+function tapSize() { const b = $('#bTap'); if (b) b.classList.toggle('tb', !song || !song.timed || mode !== 'run'); }
+// Singer line: Chinese name + pinyin. Shazam often gives an English/romanised name ("Vae Xu"); the AI looks up the Chinese one (许嵩).
+function artistLine(a) { const z = simp(a || ''), py = pyText(z); return z + (py ? ' (' + py + ')' : ''); }
+async function showSingerZh(s) {
+  const a = (s.artist || '').trim();
+  if (!a || s.lang !== 'zh' || [...a].some(isZh)) return;
+  const ck = 'zhname.' + a; let zh = store.get(ck, null);
+  if (zh == null) {
+    const t = await aiText('What is the Chinese name of the singer or band "' + a + '"' + (s.title ? ', who sings "' + simp(s.title) + '"' : '') +
+      '? Reply with only the name in Simplified Chinese. If you are not sure, reply UNKNOWN.', null, x => !!x.trim());
+    const n = (t || '').trim().split('\n')[0].replace(/^["“]|["”。.]$/g, '').trim();
+    zh = /^[\u3400-\u9fff·・&、\s]{2,16}$/.test(n) ? simp(n) : '';
+    store.set(ck, zh); log('singer name', a, '→', zh || 'unknown');
+  }
+  if (!zh || song !== s) return;
+  s.artistZh = zh;
+  setLine($('#sA'), esc(artistLine(zh)));
+}
 // Shazam name (often English or romanised) → the song's Chinese title and singer.
 async function aiVariants(title, artist, onWait) {
   const ck = 'aivar.' + title + '|' + artist, cached = store.get(ck, null); if (cached) return cached;
@@ -774,7 +797,8 @@ function openSongInfo() {
   if (!song) return;
   $('#iT').textContent = simp(song.title) || 'Lyrics';
   $('#iP').textContent = song.lang === 'zh' ? pyText(simp(song.title)) : '';
-  $('#iA').textContent = withPy(song.artist || '');
+  $('#iA').textContent = artistLine(song.artistZh || song.artist) + (song.artistZh ? ' · ' + song.artist : '');
+  $('#iTags').innerHTML = tagHtml(song.tags || []);
   const lyr = song.lines.filter(l => !l.credit).map(l => l.text).join('\n').slice(0, 4500);
   $('#aTrans').href = 'https://translate.google.com/?sl=auto&tl=en&op=translate&text=' + encodeURIComponent(lyr);
   const alts = song.alts && song.alts.length > 1 ? song.alts : null;
@@ -798,7 +822,7 @@ $('#aiPrompt').textContent = aiPrompt;
 $('#bCopyPrompt').onclick = async () => { try { await navigator.clipboard.writeText(aiPrompt); toast('Prompt copied'); } catch (e) { toast('Copy failed: select the text instead'); } };
 $('#bHowListen').onclick = () => open('#shHow'); $('#bHowListen2').onclick = () => open('#shHow');
 $('#bInfo').onclick = () => open('#shInfo');
-$('#sP').addEventListener('click', e => { if (e.target.closest('.tag')) { e.stopPropagation(); open('#shInfo'); } });
+$('#iTags').addEventListener('click', e => { if (e.target.closest('.tag')) open('#shInfo'); });
 
 /* ---------- browse events ---------- */
 const syncClear = () => { $('#bClear').hidden = !$('#q').value; };

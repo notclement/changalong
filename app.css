@@ -88,7 +88,7 @@ textarea.field{min-height:160px;font:15px/1.5 var(--han);resize:vertical;backgro
 .u.tx i{font-size:calc(var(--fs)*.8)}
 .m-py .u.x i{display:block;font-size:calc(var(--fs)*.8)}
 .m-py .u.x b{display:none}
-.now .u i{color:transparent;background:linear-gradient(90deg,var(--hl) var(--p,0%),var(--ink) var(--p,0%));-webkit-background-clip:text;background-clip:text}
+.now .u i{color:transparent;background:linear-gradient(90deg,var(--hl) var(--p,0%),var(--un) var(--p,0%));-webkit-background-clip:text;background-clip:text}
 .now .u b{color:transparent;background:linear-gradient(90deg,var(--hl) var(--p,0%),var(--dim) var(--p,0%));-webkit-background-clip:text;background-clip:text}
 .u.fix b{text-decoration:underline dotted var(--hl) 2px;text-underline-offset:4px}
 /* duet voices: colour tag where the singer changes; upcoming lines tinted so turns are visible ahead */
@@ -114,7 +114,7 @@ textarea.field{min-height:160px;font:15px/1.5 var(--han);resize:vertical;backgro
 /* pinyin-only mode */
 .m-py .u i{display:none}
 .m-py .u b{font-size:var(--fs);font-weight:700;color:var(--ink)}
-.m-py .now .u b{background:linear-gradient(90deg,var(--vc,var(--hl)) var(--p,0%),var(--ink) var(--p,0%));-webkit-background-clip:text;background-clip:text}
+.m-py .now .u b{background:linear-gradient(90deg,var(--vc,var(--hl)) var(--p,0%),var(--un) var(--p,0%));-webkit-background-clip:text;background-clip:text}
 .banner{position:absolute;left:12px;right:12px;top:6px;text-align:center;font-size:15px;color:var(--ink);z-index:2;pointer-events:none;min-height:22px}
 .banner b{color:var(--ink)}
 .banner:not(:empty):not(.cta){left:50%;right:auto;transform:translateX(-50%);width:max-content;max-width:calc(100% - 24px);background:var(--sf);border:1px solid var(--faint);border-radius:99px;padding:6px 14px;box-shadow:0 6px 18px #0004;font-variant-numeric:tabular-nums}
@@ -214,3 +214,34 @@ html,body,button,a,input,.seg,#stage{touch-action:manipulation}
 .sizer input[type=range]::-moz-range-thumb{width:34px;height:34px;border:0;border-radius:50%;background:#fff}
 
 .about-app{margin:22px 0 4px;text-align:center;font-size:13px;color:var(--dim)}.about-app a{color:var(--hl);text-decoration:none}
+
+/* not-yet-sung part of the current line: dimmer, so the sweep reads at a glance */
+:root{--un:color-mix(in srgb,var(--ink) 58%,transparent)}
+/* Tap. Not in sync yet: a bottom bar whose right end rises into a tall thumb pad (right hand), below the lyrics.
+   In sync: shrinks to a small round button floating bottom-right above the dock. */
+.dock-wrap{position:relative}
+.tap{position:relative;display:flex;align-items:center;border:0;padding:0;color:var(--ink);background:none;min-height:0}
+.tap svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tap.tb{height:56px;width:100%;margin-top:6px}
+.tap.tb{--tbc:color-mix(in srgb,var(--hl) 55%,transparent)}
+.tap.tb::before{content:"";position:absolute;inset:0;right:34%;border-radius:16px 0 0 16px;background:var(--sf);border:1.5px solid var(--tbc);border-right:0}
+.tap-hint{position:relative;flex:1;padding:0 0 0 16px;text-align:left;font-size:14px;color:var(--dim);margin-right:34%}
+.tap-pad{position:absolute;right:0;bottom:0;width:calc(34% + 1px);height:118px;border-radius:26px 16px 16px 0;background:var(--sf);border:1.5px solid var(--tbc,var(--hl));display:grid;place-items:center;align-content:center;gap:4px;box-shadow:0 -6px 20px #0004}
+.tap-pad svg{color:var(--hl);width:28px;height:28px}
+.tap.tb .tap-pad::after{content:"";position:absolute;left:-2px;bottom:0;width:4px;height:53px;background:var(--sf)}
+.tap.tb:active .tap-pad::after{background:var(--sf2)}
+.tap-pad b{font-size:17px}
+.tap.tb:active .tap-pad,.tap.tb:active::before{background:var(--sf2)}
+.tap:not(.tb){position:absolute;right:14px;bottom:calc(100% + 10px);z-index:3;width:56px;height:56px;border-radius:50%;justify-content:center;background:color-mix(in srgb,var(--sf) 88%,transparent);border:1px solid var(--faint);box-shadow:0 6px 18px #0005;opacity:.85;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.tap:not(.tb) .tap-hint{display:none}
+.tap:not(.tb) .tap-pad{position:static;width:auto;height:auto;border:0;background:none;box-shadow:none}
+.tap:not(.tb) .tap-pad b{display:none}.tap:not(.tb) .tap-pad svg{color:var(--ink);width:24px;height:24px}
+.tap:not(.tb):active{transform:scale(.94)}
+/* recents: Spotify link beside each song */
+.resw{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--sf2)}
+.resw .res{border-bottom:0;flex:1;min-width:0}
+.spot{flex:none;display:inline-flex;align-items:center;gap:4px;padding:7px 11px;border-radius:99px;font-size:12.5px;font-weight:600;color:#1ed760;background:color-mix(in srgb,#1ed760 12%,transparent);text-decoration:none}
+.spot svg{width:12px;height:12px;fill:currentColor}
+.itags{margin-top:8px}.itags .tag{margin:0 6px 0 0;cursor:pointer}
+
+@media (max-height:500px){.tap-pad{height:84px}}

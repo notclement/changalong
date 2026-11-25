@@ -67,6 +67,13 @@ Made by [Clement](https://www.linkedin.com/in/clementsg).
 
 ## Changelog
 
+**1.1.3**
+- Tap button is a big round button bottom-right until you're in sync, then shrinks out of the way
+- Singer shown in Chinese when Shazam gives an English name (Vae Xu → 许嵩)
+- Tags moved from the header to Song info
+- Not-yet-sung part of the current line is dimmer
+- Spotify button on recent songs
+
 **1.1.2**
 - Listen reuses the open ChàngAlong tab instead of piling up new Safari tabs (where Safari allows it)
 
