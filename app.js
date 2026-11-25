@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.9.2';
+const VERSION = '0.9.3';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -343,7 +343,7 @@ function openRecord(rec, alts) {
   if (song.timed && !song.dur) song.dur = song.lines.at(-1).t + 10;
   setLine($('#sT'), esc(simp(song.title) || 'Lyrics'));
   const syncTag = !song.timed ? 'Lyrics only' : song.wordSync ? 'Word synced' : 'Synced';
-  setLine($('#sA'), esc(simp(song.artist || '') + (pyText(simp(song.artist)) ? ' (' + pyText(simp(song.artist)) + ')' : '') + (song.alts && song.alts.length > 1 ? ' · ' + song.alts.length + ' versions' : '')));
+  setLine($('#sA'), esc(simp(song.artist || '') + (pyText(simp(song.artist)) ? ' (' + pyText(simp(song.artist)) + ')' : '')));
   const tags = [lang === 'zh' ? (song.yue ? 'Cantonese' : '') : LANG_TAG[lang], syncTag, song.duet ? 'Duet' : '', versionTag(song.title + ' ' + (song.album || '')), song.toSimp ? '繁→简' : ''];
   setLine($('#sP'), (lang === 'zh' ? esc(pyText(simp(song.title))) + ' ' : '') + tagHtml(tags));
   $('#bFav').classList.toggle('on', store.get('fav', []).some(f => f.key === song.key));
@@ -588,23 +588,47 @@ async function wikiLookup(lang, q, mustHave) {
     return pages.find(p => p.extract && mustHave.some(m => m && (p.title.includes(m) || p.extract.includes(m)))) || null;
   } finally { clearTimeout(to); }
 }
+// Short AI write-up of the song's meaning (Pollinations: free, no key; anonymous use is rate-limited).
+// Grounded on the song's own lyrics so it doesn't invent a story; Wikipedia is the fallback.
+async function aiAbout(s) {
+  const lyr = s.lines.filter(l => !l.credit).map(l => l.text).join(' / ').slice(0, 450);
+  const prompt = 'In 3 or 4 short sentences of simple English, explain what the song "' + simp(s.title) + '" by ' + (s.artist || 'unknown') +
+    ' is about and the feeling it expresses, for a karaoke singer who cannot read Chinese. Base it on these lyrics. No quotes from the lyrics, no markdown, no intro phrase. Lyrics: ' + lyr;
+  for (const base of ['https://text.pollinations.ai/', 'https://gen.pollinations.ai/text/']) {
+    const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 25000);
+    try {
+      log('ai', base);
+      const r = await fetch(base + encodeURIComponent(prompt) + '?model=openai', { signal: ctl.signal });
+      const t = (await r.text()).trim();
+      if (r.ok && t.length > 40 && t.length < 2000 && !/^\s*[{<]/.test(t)) return t;
+      log('ai bad reply', r.status, t.slice(0, 80));
+    } catch (e) { log('ai failed', base, e.name); } finally { clearTimeout(to); }
+  }
+  return null;
+}
 async function loadAbout(s) {
-  const key = 'about.' + s.key, cached = store.get(key, null), box = $('#about');
+  const key = 'about2.' + s.key, cached = store.get(key, null), box = $('#about');
   const show = a => {
-    if (!a || !a.text) { box.innerHTML = '<p class="muted">No write-up found for this song. Try <b>Search meaning</b>, or <b>Translate lyrics</b> to read what it says.</p>'; return; }
-    box.innerHTML = a.text.split(/\n+/).slice(0, 3).map(t => '<p>' + esc(t) + '</p>').join('') +
-      '<p class="src">From <a href="' + esc(a.url) + '" target="_blank" rel="noopener">Wikipedia</a>' + (a.lang === 'zh' ? ' (Chinese) · <a href="https://translate.google.com/?sl=zh-CN&tl=en&op=translate&text=' + encodeURIComponent(a.text.slice(0, 3000)) + '" target="_blank" rel="noopener">Translate</a>' : '') + '</p>';
+    if (!a || !a.text) { box.innerHTML = '<p class="muted">Couldn’t get a write-up right now. Try again later, or use <b>Translate the lyrics</b> below.</p>'; return; }
+    box.innerHTML = a.text.split(/\n+/).slice(0, 3).map(t => '<p>' + esc(t) + '</p>').join('') + (a.ai
+      ? '<p class="src">Written by AI from the lyrics, so it may not be exact.</p>'
+      : '<p class="src">From <a href="' + esc(a.url) + '" target="_blank" rel="noopener">Wikipedia</a>' + (a.lang === 'zh' ? ' (Chinese) · <a href="https://translate.google.com/?sl=zh-CN&tl=en&op=translate&text=' + encodeURIComponent(a.text.slice(0, 3000)) + '" target="_blank" rel="noopener">Translate</a>' : '') + '</p>');
   };
   if (cached) return show(cached);
-  box.innerHTML = '<p class="muted">Looking it up…</p>';
-  const t = simp(s.title).replace(/\s*[（(\[【].*?[)）\]】]\s*/g, '').trim(), orig = String(s.title).replace(/\s*[（(\[【].*?[)）\]】]\s*/g, '').trim(), artist = simp(s.artist || '').split(/[\s,&、]+/)[0];
-  try {
-    let p = await wikiLookup('en', t + ' ' + (s.artist || '') + ' song', [t, orig]), lang = 'en';
-    if (!p && [...t].some(isZh)) { p = await wikiLookup('zh', t + ' ' + artist, [t]); lang = 'zh'; }
-    const a = p ? { text: p.extract.trim(), url: p.fullurl, lang } : { text: '' };
-    if (p) store.set(key, a);
-    if (song && song.key === s.key) show(a);
-  } catch (e) { log('wiki failed', e); box.innerHTML = '<p class="muted">Couldn’t look this up right now (no internet?).</p>'; }
+  box.innerHTML = '<p class="muted">Writing a short summary…</p>';
+  let a = null;
+  const ai = await aiAbout(s);
+  if (ai) a = { text: ai, ai: true };
+  else {
+    const t = simp(s.title).replace(/\s*[（(\[【].*?[)）\]】]\s*/g, '').trim(), orig = String(s.title).replace(/\s*[（(\[【].*?[)）\]】]\s*/g, '').trim(), artist = simp(s.artist || '').split(/[\s,&、]+/)[0];
+    try {
+      let p = await wikiLookup('en', t + ' ' + (s.artist || '') + ' song', [t, orig]), lang = 'en';
+      if (!p && [...t].some(isZh)) { p = await wikiLookup('zh', t + ' ' + artist, [t]); lang = 'zh'; }
+      if (p) a = { text: p.extract.trim(), url: p.fullurl, lang };
+    } catch (e) { log('wiki failed', e); }
+  }
+  if (a) store.set(key, a);
+  if (song && song.key === s.key) show(a);
 }
 function openSongInfo() {
   if (!song) return;
@@ -613,7 +637,6 @@ function openSongInfo() {
   $('#iA').textContent = withPy(song.artist || '');
   const lyr = song.lines.filter(l => !l.credit).map(l => l.text).join('\n').slice(0, 4500);
   $('#aTrans').href = 'https://translate.google.com/?sl=auto&tl=en&op=translate&text=' + encodeURIComponent(lyr);
-  $('#aMeaning').href = 'https://www.google.com/search?q=' + encodeURIComponent(simp(song.title) + ' ' + simp(song.artist || '') + ' 歌词 含义 meaning');
   const alts = song.alts && song.alts.length > 1 ? song.alts : null;
   $('#verList').innerHTML = alts ? alts.map(r => resultRow(r, keyOf(r) === song.key ? 'Playing' : null)).join('') : '<p class="msg">No other versions found. Use search on the main screen to try a different spelling.</p>';
   open('#shVer'); $('#shVer').scrollTop = 0;
