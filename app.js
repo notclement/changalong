@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.8.0';
+const VERSION = '0.8.2';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -33,7 +33,7 @@ const PP = () => (window.pinyinPro && window.pinyinPro.pinyin) ? window.pinyinPr
 let song = null;          // {key,title,artist,album,dur,timed,lines,alts}
 let mode = 'idle';        // idle | wait | run | tap
 let cur = -1, base = 0, t0 = 0, running = false, ended = false, follow = true, followT = 0, seeking = false;
-let lastResults = [], paused = false, yueOn = false;
+let lastResults = [], paused = false, yueOn = false, lastPrep = -1;
 const prefs = { mode: store.get('mode', 'm-both') === 'm-py' ? 'm-py' : 'm-both', size: store.get('size2', Math.round(Math.min(60, Math.max(34, Math.min(innerWidth, 900) / 10)))), script: store.get('script', 'simp'), hl: store.get('hl', 'sweep'), skin: store.get('skin', 'dark') };
 
 /* ---------- LRC + pinyin ---------- */
@@ -186,7 +186,7 @@ function pyKeys(t) {
 }
 function buildLocal() {
   const seen = new Set(), out = [];
-  const add = (title, artist, extra) => { const k = simp(title) + '|' + simp(artist || ''); if (seen.has(k)) return; seen.add(k); const a = pyKeys(title), b = pyKeys(artist); out.push({ title: simp(title), artist: simp(artist || ''), tI: a.ini, tF: a.full, aI: b.ini, aF: b.full, ...extra }); };
+  const add = (title, artist, extra) => { const k = simp(title) + '|' + simp(artist || ''); if (seen.has(k)) return; seen.add(k); out.push({ title: simp(title), artist: simp(artist || ''), tI: pyKeys(title).ini, ...extra }); };
   for (const f of store.get('fav', [])) add(f.title, f.artist, { key: f.key });
   for (const h of store.get('hist', [])) add(h.title, h.artist, { key: h.key });
   for (const [t, a, y] of (window.KTV_CATALOG || [])) add(t, a, { yue: y === 'y' });
@@ -194,20 +194,15 @@ function buildLocal() {
 }
 function matchLocal(q) {
   localIdx ||= buildLocal();
-  const raw = q.trim(), lat = raw.toLowerCase().replace(/[\s'’-]+/g, '').replace(/ü/g, 'v');
+  const raw = q.trim(), lat = raw.toLowerCase().replace(/[\s'’-]+/g, '');
   const cjk = [...raw].some(isZh), sq = simp(raw).replace(/\s+/g, '');
   const hits = [];
   for (const e of localIdx) {
     let score = 0;
-    if (cjk) {
-      const tt = e.title.replace(/\s+/g, ''), aa = e.artist.replace(/\s+/g, '');
-      if (tt === sq) score = 100; else if (tt.startsWith(sq)) score = 90; else if (tt.includes(sq)) score = 70;
-      else if (aa.includes(sq) || (tt + aa).includes(sq)) score = 50;
-    } else if (/^[a-z0-9v]+$/.test(lat)) {
-      if (e.tI === lat) score = 100; else if (e.tI.startsWith(lat) && lat.length >= 2) score = 85;
-      else if (e.tF.startsWith(lat) && lat.length >= 3) score = 80; else if ((e.tI + e.aI) === lat || (e.aI + e.tI) === lat) score = 75;
-      else if (e.aF.startsWith(lat) && lat.length >= 3) score = 55; else if (e.aI === lat && lat.length >= 2) score = 50;
-      else if (lat.length >= 3 && e.tI.includes(lat)) score = 40;
+    const tt = e.title.replace(/\s+/g, '');
+    if (cjk) { if (tt === sq) score = 100; else if (tt.startsWith(sq)) score = 90; else if (tt.includes(sq)) score = 70; }  // part of a title
+    else if (/^[a-z0-9]+$/.test(lat)) {                                                                                   // first letters of the title's pinyin
+      if (e.tI === lat) score = 100; else if (lat.length >= 2 && e.tI.startsWith(lat)) score = 85; else if (lat.length >= 3 && e.tI.includes(lat)) score = 40;
     }
     if (score) hits.push([score + (e.key ? 5 : 0), e]);
   }
@@ -331,6 +326,8 @@ function openRecord(rec, alts) {
     const nx = song.lines[i + 1], gap = nx ? nx.t - l.t : 6;
     l.end = l.words ? Math.max(l.t + 0.3, l.u.at(-1).tm[1]) : l.t + Math.max(0.6, Math.min(gap - 0.15, l.u.length * song.rate * 1.15 + 0.3, 7));
   });
+  // Lines that start after a pause (intro, instrumental, long breath) get a 3-2-1 dot countdown.
+  song.lines.forEach((l, i) => { const p = song.lines[i - 1]; l.lead = song.timed && !l.credit && (!p || p.credit ? (l.t >= 2.5) : (l.t - p.end >= 3.5)); });
   log('rate', song.rate.toFixed(2), 's/syllable');
   if (song.timed && !song.dur) song.dur = song.lines.at(-1).t + 10;
   setLine($('#sT'), esc(simp(song.title) || 'Lyrics'));
@@ -341,7 +338,7 @@ function openRecord(rec, alts) {
   $('#bFav').classList.toggle('on', store.get('fav', []).some(f => f.key === song.key));
   $('#tEnd').textContent = song.timed ? fmt(song.dur) : '—';
   $('#seek').disabled = !song.timed;
-  renderStage(); cur = -1; ended = false; follow = true;
+  renderStage(); cur = -1; lastPrep = -1; ended = false; follow = true;
   if (song.timed) { mode = 'wait'; running = false; base = 0; banner('wait'); }
   else { mode = 'tap'; running = false; go(0); fillLine(0); banner(''); }
   $('#bTap').textContent = song.timed ? 'Tap as the next line starts' : 'Next line';
@@ -352,7 +349,7 @@ function openRecord(rec, alts) {
 /* ---------- stage ---------- */
 function renderStage() {
   const tag = l => { if (!l.turn) return ''; const n = song.names && song.names[l.v]; return '<span class="vt">' + esc(VOICES[l.v].tag) + ' ' + esc(n || VOICES[l.v].label) + '</span>'; };
-  $('#stage').innerHTML = song.lines.map((l, i) => l.credit ? '<div class="ln credit" data-i="' + i + '">' + esc(l.text) + '</div>' : '<div class="ln' + (l.v ? ' v-' + l.v : '') + '" data-i="' + i + '">' + tag(l) + l.u.map((u, j) =>
+  $('#stage').innerHTML = song.lines.map((l, i) => l.credit ? '<div class="ln credit" data-i="' + i + '">' + esc(l.text) + '</div>' : '<div class="ln' + (l.v ? ' v-' + l.v : '') + '" data-i="' + i + '">' + (l.lead ? '<span class="cd" aria-hidden="true"><i></i><i></i><i></i></span>' : '') + tag(l) + l.u.map((u, j) =>
     (u.zh ? '<span class="u' + (u.fix ? ' fix' : '') + '" data-j="' + j + '"><b>' + esc(u.p) + '</b><i>' + esc(u.h) + '</i></span>'
           : '<span class="u x' + (u.tx ? ' tx' : '') + '" data-j="' + j + '">' + (u.tx ? '' : '<b>\u00a0</b>') + '<i>' + esc(u.h) + '</i></span>')).join('') + '</div>').join('');
   applyPrefs();
@@ -414,6 +411,15 @@ function tick() {
       });
     }
     const nx = song.lines[i + 1];
+    // countdown: from 3s before a line that follows a pause, scroll to it early and fade the dots 3 → 2 → 1
+    const left = nx ? nx.t - tt : 0;
+    const prepI = nx && nx.lead && left > 0 && left <= 3.2 && (i < 0 || tt > l.end) ? i + 1 : -1;
+    if (prepI !== lastPrep) {
+      const old = lastPrep >= 0 && $('#stage').children[lastPrep]; if (old) old.classList.remove('prep');
+      lastPrep = prepI;
+      if (prepI >= 0) { $('#stage').children[prepI].classList.add('prep'); if (i >= 0) $('#stage').children[i].classList.add('done'); if (follow) scrollToLine(prepI); }
+    }
+    if (prepI >= 0) $('#stage').children[prepI].dataset.n = Math.min(3, Math.ceil(left));
     if (!ended) {
       const nv = nx && nx.v, turnSoon = nv && (!l || l.v !== nv) && nx.t - tt <= 5;
       const who = nv ? '<b class="c-' + nv + '">' + esc(VOICES[nv].tag + ' ' + ((song.names && song.names[nv]) || VOICES[nv].label)) + '</b>' : '';

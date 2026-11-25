@@ -44,7 +44,7 @@ Grey tags by the title and in search results: **Word synced / Synced / Lyrics on
 
 ## Search
 
-Type a title, singer, part of a title (你那么) or pinyin initials (nnmat → 你那么爱她, zjl → 周杰伦).
+Type a title, part of a title (你那么) or the first letters of its pinyin (nnmat → 你那么爱她).
 Suggestions come instantly from your recent songs, favourites and a built-in list of ~200 popular KTV songs (`vendor/catalog.js`; Cantopop entries switch to jyutping automatically). Lyrics always come from LRCLIB.
 
 ## Controls
@@ -58,6 +58,7 @@ Suggestions come instantly from your recent songs, favourites and a built-in lis
 | Display | Settings: 汉字 + pinyin (pinyin under each character) or Pinyin only, Simplified or as written, text size, dark/light |
 | Duets | Lines marked 男 / 女 / 合, with or without a colon (or singer names) are coloured: Him blue, Her pink, Both green, with a heads-up before each change |
 | Pause | Pause button, bottom right |
+| Countdown | Three dots fade 3-2-1 before any line that follows a pause (intro, instrumental); the line scrolls into place early |
 | Highlight | Settings: Sweep across words (default) or Whole line |
 | Sync tag | Grey tag by the title: Word synced (highlight follows each word's timing), Synced (per line), Lyrics only (tap to advance) |
 | No timestamps | Plain lyrics switch to tap-to-advance |

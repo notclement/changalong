@@ -95,6 +95,14 @@ textarea.field{min-height:160px;font:15px/1.5 var(--han);resize:vertical;backgro
 @keyframes nudge{to{transform:translateX(4px)}}
 .ln.credit{font-size:14px;color:var(--dim);transform:none;opacity:.6;padding:4px 0}
 .c-m{color:var(--vm)!important}.c-f{color:var(--vf)!important}.c-b{color:var(--vb)!important}
+/* 3-2-1 countdown dots above a line that follows a pause */
+.cd{display:none;flex-basis:100%;gap:10px;margin:0 0 8px;height:12px;align-items:center}
+.ln.prep{opacity:1;transform:none}
+.ln.prep .cd{display:flex}
+.cd i{width:12px;height:12px;border-radius:50%;background:var(--vc,var(--hl));transition:opacity .25s,transform .25s}
+.ln[data-n="2"] .cd i:nth-child(3),.ln[data-n="1"] .cd i:nth-child(n+2){opacity:.15;transform:scale(.6)}
+.ln.now .cd{display:none}
+.ln.now.done{opacity:.3;transform:scale(.84)}
 /* pinyin-only mode */
 .m-py .u i{display:none}
 .m-py .u b{font-size:var(--fs);font-weight:700;color:var(--ink)}
