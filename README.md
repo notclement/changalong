@@ -67,6 +67,9 @@ Made by [Clement](https://www.linkedin.com/in/clementsg).
 
 ## Changelog
 
+**1.1.1**
+- Built-in song list grown to ~1,700 songs (more classics, Cantopop and recent hits), singers checked
+
 **1.1.0**
 - Lyrics not found? Retries with the Chinese-only title, Traditional/Simplified spellings, AI-suggested titles and other singers' versions, then shows closest results
 - Version number and author in Settings
