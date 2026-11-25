@@ -51,7 +51,7 @@ No AI builder? Add these actions by hand: Recognize Music → URL Encode (Shazam
 
 [LRCLIB](https://lrclib.net) (lyrics) · [pinyin-pro](https://github.com/zh-lx/pinyin-pro) · [to-jyutping](https://github.com/CanCLID/to-jyutping) · [OpenCC](https://github.com/BYVoid/OpenCC) dictionaries · [Pollinations](https://pollinations.ai) / Gemini / [Puter](https://puter.com) (AI) · GitHub Pages
 
-Free, no account. Favourites and fixes stay on your phone.
+Free, no account. Your fixes and recent songs stay on your phone.
 
 ## Development
 

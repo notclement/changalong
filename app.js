@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '1.0.3';
+const VERSION = '1.0.4';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -170,10 +170,9 @@ function renderResults(list, q) {
     : '<p class="msg">No lyrics found for “' + esc(q) + '”. Try the Chinese title, or the singer’s name only.</p>';
 }
 function renderLists() {
-  const fav = store.get('fav', []), hist = store.get('hist', []);
-  const row = s => '<button class="res" data-key="' + esc(s.key) + '"><span class="art">' + esc(simp((s.title || '?').charAt(0))) + '</span><span class="rm"><div class="t">' + esc(simp(s.title)) + '</div>' + tpRow(s.title) + '<div class="a">' + esc(withPy(s.artist || '')) + '</div></span>' + (fav.some(f => f.key === s.key) ? '<span class="badge">★</span>' : '') + '</button>';
-  $('#lists').innerHTML = (fav.length ? '<div class="sec">Favourites</div>' + fav.map(row).join('') : '')
-    + (hist.length ? '<div class="sec">Recent</div>' + hist.slice(0, 15).map(row).join('') : '');
+  const hist = store.get('hist', []);
+  const row = s => '<button class="res" data-key="' + esc(s.key) + '"><span class="art">' + esc(simp((s.title || '?').charAt(0))) + '</span><span class="rm"><div class="t">' + esc(simp(s.title)) + '</div>' + tpRow(s.title) + '<div class="a">' + esc(withPy(s.artist || '')) + '</div></span>' + '</button>';
+  $('#lists').innerHTML = (hist.length ? '<div class="sec">Recent</div>' + hist.slice(0, 15).map(row).join('') : '');
 }
 /* ---------- local suggestions: popular KTV songs + your history, matched by pinyin initials or part of a title ---------- */
 let localIdx = null;
@@ -187,7 +186,6 @@ function pyKeys(t) {
 function buildLocal() {
   const seen = new Set(), out = [];
   const add = (title, artist, extra) => { const k = simp(title) + '|' + simp(artist || ''); if (seen.has(k)) return; seen.add(k); out.push({ title: simp(title), artist: simp(artist || ''), tI: [...String(title)].some(isZh) ? pyKeys(title).ini : '', ...extra }); };
-  for (const f of store.get('fav', [])) add(f.title, f.artist, { key: f.key });
   for (const h of store.get('hist', [])) add(h.title, h.artist, { key: h.key });
   for (const [t, a, y] of (window.KTV_CATALOG || [])) add(t, a, { yue: y === 'y' });
   return out;
@@ -313,7 +311,7 @@ function rememberHistory(rec) {
   localIdx = null;
   const h = store.get('hist', []).filter(x => x.key !== rec.key);
   h.unshift({ key: rec.key, title: rec.title, artist: rec.artist }); store.set('hist', h.slice(0, 40));
-  const keep = new Set(h.slice(0, 40).map(x => x.key).concat(store.get('fav', []).map(x => x.key)));
+  const keep = new Set(h.slice(0, 40).map(x => x.key));
   try { for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.startsWith('pk.song.') && !keep.has(k.slice(8))) localStorage.removeItem(k); } } catch (e) {}
 }
 function recFromLrclib(r) {
@@ -368,7 +366,6 @@ function openRecord(rec, alts) {
   setLine($('#sA'), esc(simp(song.artist || '') + (pyText(simp(song.artist)) ? ' (' + pyText(simp(song.artist)) + ')' : '')));
   const tags = [lang === 'zh' ? (song.yue ? 'Cantonese' : '') : LANG_TAG[lang], syncTag, song.duet ? 'Duet' : '', versionTag(song.title + ' ' + (song.album || '')), song.toSimp ? '繁→简' : ''];
   setLine($('#sP'), (lang === 'zh' ? esc(pyText(simp(song.title))) + ' ' : '') + tagHtml(tags));
-  $('#bFav').classList.toggle('on', store.get('fav', []).some(f => f.key === song.key));
   $('#tEnd').textContent = song.timed ? fmt(song.dur) : '—';
   $('#seek').disabled = !song.timed;
   renderStage(); cur = -1; lastPrep = -1; ended = false; follow = true;
@@ -395,7 +392,7 @@ function applyPrefs() {
   document.documentElement.style.setProperty('--fs', prefs.size + 'px');
   document.documentElement.style.colorScheme = prefs.skin;
   const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = prefs.skin === 'light' ? '#fbf6f1' : '#140d1c';
-  $('#size').value = prefs.size; $('#sizeV').textContent = prefs.size;
+  $('#size').value = prefs.size; $('#sizeV').textContent = prefs.size; $('#size').style.setProperty('--p', (prefs.size - 24) / 36 * 100 + '%');
   for (const b of document.querySelectorAll('#segMode button')) b.setAttribute('aria-pressed', b.dataset.v === prefs.mode);
   for (const b of document.querySelectorAll('#segHl button')) b.setAttribute('aria-pressed', b.dataset.v === prefs.hl);
   for (const b of document.querySelectorAll('#segScript button')) b.setAttribute('aria-pressed', b.dataset.v === prefs.script);
@@ -591,6 +588,8 @@ $('#segScript').onclick = e => { const b = e.target.closest('button'); if (!b ||
 $('#segSung').onclick = e => { const b = e.target.closest('button'); if (!b || !song) return; const on = b.dataset.v === 'yue'; if (on === !!song.yue) return; store.set('yue.' + song.key, on); closeAll(); toast(on ? 'Cantonese readings (jyutping)' : 'Mandarin readings (pinyin)'); reopenKeep(); };
 $('#size').oninput = e => { prefs.size = +e.target.value; store.set('size2', prefs.size); applyPrefs(); };
 $('#size').onchange = () => { if (cur >= 0) scrollToLine(cur, true); };
+const sizeStep = d => { const r = $('#size'); r.value = Math.min(60, Math.max(24, +r.value + d)); r.dispatchEvent(new Event('input')); r.dispatchEvent(new Event('change')); };
+$('#bSzDn').onclick = () => sizeStep(-2); $('#bSzUp').onclick = () => sizeStep(2);
 $('#gemKey').value = store.get('gemkey', '');
 function gemStatus(ok, msg) { const el = $('#gemStat'); el.className = 'gemstat ' + (ok === true ? 'ok' : ok === false ? 'bad' : ''); el.textContent = msg; }
 if (store.get('gemkey', '')) gemStatus(true, '✓ Key saved and verified');
@@ -608,11 +607,6 @@ $('#bGemSave').onclick = async () => {
   finally { clearTimeout(to); b.disabled = false; b.textContent = 'Verify & save'; }
 };
 $('#bReset').onclick = () => { if (!song) return; store.set(offKey(), 0); $('#offV').textContent = '0.0 s'; toast('Offset reset'); };
-$('#bFav').onclick = () => {
-  if (!song) return; let f = store.get('fav', []); const on = !f.some(x => x.key === song.key);
-  f = on ? [{ key: song.key, title: song.title, artist: song.artist }, ...f] : f.filter(x => x.key !== song.key);
-  store.set('fav', f); localIdx = null; $('#bFav').classList.toggle('on', on); toast(on ? 'Saved to favourites' : 'Removed from favourites'); renderLists();
-};
 /* ---------- song info: about (Wikipedia), translate lyrics, search meaning, other versions ---------- */
 // Short AI write-up of the song's meaning (Pollinations: free, no key; anonymous use is rate-limited).
 // Grounded on the song's own lyrics so it doesn't invent a story.
