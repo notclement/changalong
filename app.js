@@ -1,13 +1,27 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.5.2';
+const VERSION = '0.6.0';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt = s => { s = Math.max(0, s | 0); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
-const isZh = c => /[㐀-鿿豈-﫿]/.test(c);
+const isZh = c => /[㐀-鿿豈-﫿\u{20000}-\u{3134f}]/u.test(c);
+const KANA = /[぀-ヿㇰ-ㇿ]/, HANGUL = /[가-힯ᄀ-ᇿ㄰-㆏]/;
+// Script of a whole song: 'zh' gets pinyin + Simplified conversion; anything else is shown as plain text.
+function detectLang(t) {
+  let han = 0, kana = 0, hangul = 0, letters = 0;
+  for (const ch of String(t ?? '')) {
+    if (isZh(ch)) han++; else if (KANA.test(ch)) kana++; else if (HANGUL.test(ch)) hangul++;
+    if (/\p{L}/u.test(ch)) letters++;
+  }
+  if (kana >= 3 || (kana && kana * 4 >= han)) return 'ja';
+  if (hangul && hangul >= han) return 'ko';
+  if (han >= 8 || (han && han >= letters * 0.25)) return 'zh';
+  return letters ? 'other' : 'zh';
+}
+const LANG_TAG = { ja: 'Japanese', ko: 'Korean', other: 'No pinyin' };
 const log = (...a) => console.log('[changalong v' + VERSION + ']', new Date().toISOString().slice(5, 19).replace('T', ' '), '|', ...a);
 const store = {
   get(k, d) { try { const v = localStorage.getItem('pk.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
@@ -71,11 +85,26 @@ function toUnits(text, ct) {
   }
   flush(); return units;
 }
+// Plain-text units for lines with no Chinese (English, Korean, Malay…): one unit per word, punctuation kept.
+// Japanese has no spaces, so it is split per character for a smooth highlight.
+function toWords(text, ct) {
+  const units = []; let idx = 0;
+  for (const tok of String(text).split(/(\s+)/)) {
+    const chars = [...tok];
+    if (!tok.trim()) { idx += chars.length; continue; }
+    const pieces = (KANA.test(tok) || isZh(chars[0])) ? chars : [tok];
+    for (const pc of pieces) {
+      const n = [...pc].length, a = ct ? ct[idx] : null, b = ct ? ct[idx + n - 1] : null;
+      units.push({ h: pc, p: '', zh: false, tx: true, tm: a && b ? [a[0], b[1]] : null }); idx += n;
+    }
+  }
+  return units;
+}
 // Fixes for readings pinyin-pro gets wrong in lyrics; users can still override any syllable.
 try { window.pinyinPro && window.pinyinPro.customPinyin && window.pinyinPro.customPinyin({ '系上': 'jì shàng', '背着': 'bēi zhe', '只为': 'zhǐ wèi', '只为你': 'zhǐ wèi nǐ', '只有': 'zhǐ yǒu', '一只': 'yì zhī', '为你': 'wèi nǐ', '为了': 'wèi le', '为谁': 'wèi shéi' }); } catch (e) {}
-const simp = t => (prefs.script === 'simp' && window.toSimplified) ? window.toSimplified(t).replace(/著(?![名作称述录书者])/g, '着') : String(t ?? '');
+const simp = t => (prefs.script === 'simp' && window.toSimplified && detectLang(t) === 'zh') ? window.toSimplified(t).replace(/著(?![名作称述录书者])/g, '着') : String(t ?? '');
 function pyText(t) {
-  const P = PP(); t = String(t ?? ''); if (!P || ![...t].some(isZh)) return '';
+  const P = PP(); t = String(t ?? ''); if (!P || ![...t].some(isZh) || KANA.test(t)) return '';
   try { return P.pinyin(t, { toneType: 'symbol', toneSandhi: true, nonZh: 'consecutive' }).replace(/\s+/g, ' ').trim(); } catch (e) { return ''; }
 }
 const tpRow = t => { const p = pyText(simp(t)); return p ? '<div class="tp">' + esc(p) + '</div>' : ''; };
@@ -196,15 +225,17 @@ function recFromLrclib(r) {
 function openRecord(rec, alts) {
   log('open', rec.key, rec.title, rec.artist);
   cacheSong(rec); rememberHistory(rec);
-  const parsed = parseLRC(simp(rec.lrc));
+  const lang = detectLang(rec.lrc.replace(/\[[^\]]*\]|<[^>]*>/g, ''));
+  const parsed = parseLRC(lang === 'zh' ? simp(rec.lrc) : rec.lrc);
   const ov = store.get('ov.' + rec.key, {});
-  song = { ...rec, timed: parsed.timed, alts: alts || null };
+  song = { ...rec, lang, timed: parsed.timed, alts: alts || null };
   const names = {}; let voice = null; const bare = bareMarkers(parsed.lines);
   song.lines = parsed.lines.map((l, i) => {
     let text = l.text, credit = false, ct = l.ct;
     if (CREDIT.test(text)) credit = true;
     else { const sv = splitVoice(text, names, bare); if (sv) { voice = sv.v; if (ct) ct = ct.slice([...text].length - [...sv.text].length); text = sv.text; } }
-    const u = credit ? [] : toUnits(text, ct); u.forEach((x, j) => { const o = ov[i + ':' + j]; if (o) { x.p = o; x.fix = true; } });
+    const zhLine = lang === 'zh' && [...text].some(isZh);
+    const u = credit ? [] : zhLine ? toUnits(text, ct) : toWords(text, ct); u.forEach((x, j) => { const o = ov[i + ':' + j]; if (o) { x.p = o; x.fix = true; } });
     const timedWords = u.length > 0 && u.every(x => x.tm);
     return { t: l.t, text, u, credit, v: credit ? null : voice, words: timedWords };
   });
@@ -218,7 +249,7 @@ function openRecord(rec, alts) {
   setLine($('#sT'), esc(simp(song.title) || 'Lyrics'));
   const syncTag = !song.timed ? 'Lyrics only' : song.wordSync ? 'Word synced' : 'Synced';
   setLine($('#sA'), esc(simp(song.artist || '') + (pyText(simp(song.artist)) ? ' (' + pyText(simp(song.artist)) + ')' : '') + (song.alts && song.alts.length > 1 ? ' · ' + song.alts.length + ' versions' : '')));
-  setLine($('#sP'), esc(pyText(simp(song.title))) + ' <span class="tag">' + syncTag + '</span>');
+  setLine($('#sP'), (lang === 'zh' ? esc(pyText(simp(song.title))) : '<span class="tag">' + LANG_TAG[lang] + '</span>') + ' <span class="tag">' + syncTag + '</span>');
   $('#bFav').classList.toggle('on', store.get('fav', []).some(f => f.key === song.key));
   $('#tEnd').textContent = song.timed ? fmt(song.dur) : '—';
   $('#seek').disabled = !song.timed;
@@ -234,7 +265,8 @@ function openRecord(rec, alts) {
 function renderStage() {
   const tag = l => { if (!l.turn) return ''; const n = song.names && song.names[l.v]; return '<span class="vt">' + esc(VOICES[l.v].tag) + ' ' + esc(n || VOICES[l.v].label) + '</span>'; };
   $('#stage').innerHTML = song.lines.map((l, i) => l.credit ? '<div class="ln credit" data-i="' + i + '">' + esc(l.text) + '</div>' : '<div class="ln' + (l.v ? ' v-' + l.v : '') + '" data-i="' + i + '">' + tag(l) + l.u.map((u, j) =>
-    '<span class="u' + (u.zh ? '' : ' x') + (u.fix ? ' fix' : '') + '" data-j="' + j + '"><b>' + esc(u.p) + '</b>' + (u.zh ? '<i>' + esc(u.h) + '</i>' : '') + '</span>').join('') + '</div>').join('');
+    (u.zh ? '<span class="u' + (u.fix ? ' fix' : '') + '" data-j="' + j + '"><b>' + esc(u.p) + '</b><i>' + esc(u.h) + '</i></span>'
+          : '<span class="u x' + (u.tx ? ' tx' : '') + '" data-j="' + j + '">' + (u.tx ? '' : '<b>\u00a0</b>') + '<i>' + esc(u.h) + '</i></span>')).join('') + '</div>').join('');
   applyPrefs();
 }
 function applyPrefs() {

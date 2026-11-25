@@ -59,7 +59,7 @@ textarea.field{min-height:160px;font:15px/1.5 var(--han);resize:vertical;backgro
 .prog{grid-column:1/-1;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--dim);font-variant-numeric:tabular-nums;padding:2px 6px 0}
 .prog input{flex:1;accent-color:var(--hl);height:28px}
 .stage-wrap{position:relative;overflow:hidden;min-height:0}
-#stage{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding:0 18px;-webkit-mask-image:linear-gradient(transparent,#000 16%,#000 74%,transparent);mask-image:linear-gradient(transparent,#000 16%,#000 74%,transparent);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#stage{unicode-bidi:plaintext;position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding:0 18px;-webkit-mask-image:linear-gradient(transparent,#000 16%,#000 74%,transparent);mask-image:linear-gradient(transparent,#000 16%,#000 74%,transparent);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 #stage::-webkit-scrollbar{display:none}
 #stage::before,#stage::after{content:"";display:block;height:42%}
 .ln{padding:12px 0;transition:opacity .3s,transform .3s;opacity:.4;transform-origin:left center;transform:scale(.84);display:flex;flex-wrap:wrap;column-gap:.3em;row-gap:2px;cursor:pointer}
@@ -70,7 +70,11 @@ textarea.field{min-height:160px;font:15px/1.5 var(--han);resize:vertical;backgro
 .u{display:inline-flex;flex-direction:column-reverse;align-items:center;justify-content:flex-end;line-height:1.15}
 .u i{font:500 var(--fs)/1.2 var(--han);font-style:normal;color:var(--ink)}
 .u b{font-weight:600;font-size:calc(var(--fs)*.55);letter-spacing:.01em;color:var(--dim);margin-top:1px}
-.u.x b{font-size:calc(var(--fs)*.8);color:var(--dim)}
+.u.x i{font-family:var(--sans);font-weight:600}
+.u.x b{visibility:hidden}
+.u.tx i{font-size:calc(var(--fs)*.8)}
+.m-py .u.x i{display:block;font-size:calc(var(--fs)*.8)}
+.m-py .u.x b{display:none}
 .now .u i{color:transparent;background:linear-gradient(90deg,var(--hl) var(--p,0%),var(--ink) var(--p,0%));-webkit-background-clip:text;background-clip:text}
 .now .u b{color:transparent;background:linear-gradient(90deg,var(--hl) var(--p,0%),var(--dim) var(--p,0%));-webkit-background-clip:text;background-clip:text}
 .u.fix b{text-decoration:underline dotted var(--hl) 2px;text-underline-offset:4px}

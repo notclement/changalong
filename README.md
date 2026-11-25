@@ -30,6 +30,12 @@ Create a shortcut named "ChangAlong" that does this:
 
 By hand: Recognize Music → URL Encode (Shazam Media → Title) → Text `https://notclement.github.io/changalong/?title=` + URL Encoded Text → Open URLs.
 
+## Languages
+
+Chinese songs get pinyin under every character; English words inside them are shown as they are.
+Songs in other languages (English, Japanese, Korean, Malay…) are shown as plain text with the same timing and highlight, tagged *No pinyin*, *Japanese* or *Korean*.
+Japanese is detected from kana, so its kanji never get Chinese pinyin or Simplified conversion.
+
 ## Controls
 
 | Action | How |
