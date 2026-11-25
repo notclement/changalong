@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.9.5';
+const VERSION = '0.9.6';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -209,9 +209,9 @@ function matchLocal(q) {
   return hits.sort((a, b) => b[0] - a[0]).slice(0, 8).map(x => x[1]);
 }
 let lastSugg = [];
-const INIT_HINT = '<p class="msg">No match for those initials. Initials work for about 300 popular KTV songs and any song you’ve opened before. For others, type the title in Chinese once, and its initials will work after that.</p>';
+const INIT_HINT = '<p class="msg">Press <b>Search</b> to find songs with these initials.</p>';
 function suggRow(e, i) {
-  return '<button class="res" data-sugg="' + i + '"><span class="art">' + esc(e.title.charAt(0)) + '</span><span class="rm"><div class="t">' + esc(e.title) + '</div>' + tpRow(e.title) + '<div class="a">' + esc(withPy(e.artist)) + '</div></span><span class="badges">' + (e.key ? '<span class="badge">Recent</span>' : '') + (e.yue ? '<span class="badge">Cantonese</span>' : '') + '</span></button>';
+  return '<button class="res" data-sugg="' + i + '"><span class="art">' + esc(e.title.charAt(0)) + '</span><span class="rm"><div class="t">' + esc(e.title) + '</div>' + tpRow(e.title) + '<div class="a">' + esc(withPy(e.artist)) + '</div></span><span class="badges">' + (e.key ? '<span class="badge">Recent</span>' : '') + (e.ai ? '<span class="badge">AI match</span>' : '') + (e.yue ? '<span class="badge">Cantonese</span>' : '') + '</span></button>';
 }
 async function openFromMeta(e) {
   if (e.key) { const rec = store.get('song.' + e.key, null); if (rec) return openRecord(rec); }
@@ -224,13 +224,34 @@ async function openFromMeta(e) {
     return openRecord(rec, list);
   } catch (err) { log('suggestion lookup failed', err); toast('Couldn’t reach the lyrics server'); }
 }
+let searchSeq = 0;
+const seekingCard = (q, line2) => '<div class="seeking"><span class="spin" aria-hidden="true"></span><div><b>Finding songs for “' + esc(q) + '”…</b><div class="muted">' + line2 + '</div></div></div>' +
+  '<div class="skel"><i></i><i></i><i></i></div>';
+async function searchInitials(ini, q) {
+  const my = ++searchSeq, local = matchLocal(q);
+  const head = () => local.length ? '<div class="sec">Suggestions</div>' + local.map(suggRow).join('') : '';
+  lastSugg = local;
+  $('#results').innerHTML = head() + seekingCard(q, 'Matching pinyin initials with AI. This takes a few seconds.');
+  const ai = await aiInitials(ini, () => { if (my === searchSeq) { const m = $('#results .seeking .muted'); if (m) m.textContent = 'The free AI is busy, trying again in a few seconds…'; } });
+  if (my !== searchSeq) return;                                   // a newer search replaced this one
+  const known = new Set(local.map(e => e.title + '|' + e.artist));
+  const extra = (ai || []).filter(e => !known.has(e.title + '|' + e.artist));
+  lastSugg = local.concat(extra);
+  if (!lastSugg.length) {
+    $('#results').innerHTML = '<p class="msg">' + (ai == null ? 'Couldn’t reach the AI right now. Try again in a moment, or type the title in Chinese.' : 'No songs found for “' + esc(q) + '”. Try typing the title in Chinese.') + '</p>';
+    return;
+  }
+  $('#results').innerHTML = '<div class="sec">Songs matching “' + esc(q) + '”</div>' + lastSugg.map(suggRow).join('') + (ai == null ? '<p class="msg">The AI didn’t answer, so only songs you’ve opened or popular ones are shown.</p>' : '');
+}
 async function doSearch(q) {
+  searchSeq++;
   q = q.trim(); if (!q) return;
   lastSugg = matchLocal(q);
   const sugg = lastSugg.length ? '<div class="sec">Suggestions</div>' + lastSugg.map(suggRow).join('') : '';
   $('#results').innerHTML = sugg + '<p class="msg">Searching lyrics…</p>';
-  // pure initials like "nnmat" mean nothing to the lyrics server, so only suggestions are shown for those
-  if (lastSugg.length && /^[a-z]{2,8}$/i.test(q.replace(/\s+/g, ''))) { $('#results').innerHTML = sugg; return; }
+  // pure initials like "yyyy" mean nothing to the lyrics server: show known matches, then ask the AI for more
+  const ini = q.replace(/\s+/g, '').toLowerCase();
+  if (/^[a-z]{2,10}$/.test(ini)) return searchInitials(ini, q);
   try {
     let list = await searchQ(q);
     // a short run of letters is probably pinyin initials: put Chinese titles first
@@ -584,18 +605,42 @@ async function aiAbout(s, onWait) {
   const lyr = s.lines.filter(l => !l.credit).map(l => l.text).join(' / ').slice(0, 450);
   const prompt = 'In 3 or 4 short sentences of simple English, explain what the song "' + simp(s.title) + '" by ' + (s.artist || 'unknown') +
     ' is about and the feeling it expresses, for a karaoke singer who cannot read Chinese. Base it on these lyrics. No quotes from the lyrics, no markdown, no intro phrase. Lyrics: ' + lyr;
+  return aiText(prompt, onWait, t => t.length > 40 && t.length < 2000);
+}
+// Free AI text (Pollinations, no key). Anonymous use allows ~1 request per 15s, so on failure wait and try once more.
+async function aiText(prompt, onWait, ok) {
   for (const [k, base] of [[0, 'https://text.pollinations.ai/'], [1, 'https://gen.pollinations.ai/text/'], [2, 'https://text.pollinations.ai/']]) {
-    if (k === 2) { if (onWait) onWait(); await new Promise(r => setTimeout(r, 16000)); }   // free tier allows ~1 request per 15s: wait and try once more
+    if (k === 2) { if (onWait) onWait(); await new Promise(r => setTimeout(r, 16000)); }
     const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 25000);
     try {
       log('ai', base);
       const r = await fetch(base + encodeURIComponent(prompt) + '?model=openai', { signal: ctl.signal });
       const t = (await r.text()).trim();
-      if (r.ok && t.length > 40 && t.length < 2000 && !/^\s*[{<]/.test(t)) return t;
+      if (r.ok && !/^\s*[{<]/.test(t) && ok(t)) return t;
       log('ai bad reply', r.status, t.slice(0, 80));
     } catch (e) { log('ai failed', base, e.name); } finally { clearTimeout(to); }
   }
   return null;
+}
+// Pinyin initials → song titles. The AI suggests; every title is checked against the initials here, so wrong guesses never show.
+async function aiInitials(q, onWait) {
+  const ck = 'aiini.' + q, cached = store.get(ck, null); if (cached) return cached;
+  const prompt = 'List up to 10 well-known Chinese songs (Mandarin or Cantonese) whose title, written in Chinese characters, has pinyin initials exactly "' + q +
+    '" (one letter per character, ' + q.length + ' characters). Reply with one song per line as: Title|Singer|Mandarin or Cantonese. Use Simplified Chinese. No numbering, no other text.';
+  const t = await aiText(prompt, onWait, x => x.includes('|'));
+  if (t == null) return null;
+  const out = [], seen = new Set();
+  for (const line of t.split(/\n+/)) {
+    const [title, artist, lang] = line.replace(/^[\s\d.、)*-]+/, '').split('|').map(x => (x || '').trim());
+    if (!title || ![...title].some(isZh)) continue;
+    const ini = pyKeys(title).ini, k = simp(title) + '|' + simp(artist);
+    if (seen.has(k) || !(ini === q || (q.length >= 3 && ini.startsWith(q)))) continue;
+    seen.add(k); out.push({ title: simp(title), artist: simp(artist || ''), yue: /cantonese|粤/i.test(lang || ''), ai: true, exact: ini === q });
+  }
+  out.sort((a, b) => b.exact - a.exact);
+  log('ai initials', q, out.length, 'verified of', t.split(/\n+/).length);
+  store.set(ck, out);
+  return out;
 }
 async function loadAbout(s) {
   const key = 'about3.' + s.key, cached = store.get(key, null), box = $('#about');
@@ -650,7 +695,7 @@ $('#bUse').onclick = () => {
 /* ---------- browse events ---------- */
 const syncClear = () => { $('#bClear').hidden = !$('#q').value; };
 $('#q').addEventListener('input', () => {
-  syncClear(); const q = $('#q').value.trim();
+  syncClear(); searchSeq++; const q = $('#q').value.trim();
   if (!q) { $('#results').innerHTML = ''; return; }
   lastSugg = matchLocal(q);
   $('#results').innerHTML = lastSugg.length ? '<div class="sec">Suggestions</div>' + lastSugg.map(suggRow).join('') : (/^[a-z]{2,8}$/i.test(q.replace(/\s+/g, '')) ? INIT_HINT : '');
