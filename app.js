@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.9.1';
+const VERSION = '0.9.2';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -576,12 +576,51 @@ $('#bFav').onclick = () => {
   f = on ? [{ key: song.key, title: song.title, artist: song.artist }, ...f] : f.filter(x => x.key !== song.key);
   store.set('fav', f); localIdx = null; $('#bFav').classList.toggle('on', on); toast(on ? 'Saved to favourites' : 'Removed from favourites'); renderLists();
 };
-$('#bSong').onclick = () => {
+/* ---------- song info: about (Wikipedia), translate lyrics, search meaning, other versions ---------- */
+async function wikiLookup(lang, q, mustHave) {
+  const u = 'https://' + lang + '.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=' + encodeURIComponent(q) +
+    '&gsrlimit=5&prop=extracts|info&exintro=1&explaintext=1&exsentences=5&inprop=url&format=json&origin=*' + (lang === 'zh' ? '&variant=zh-cn' : '');
+  log('wiki', lang, q);
+  const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 10000);
+  try {
+    const j = await (await fetch(u, { signal: ctl.signal })).json();
+    const pages = Object.values((j.query && j.query.pages) || {}).sort((a, b) => a.index - b.index);
+    return pages.find(p => p.extract && mustHave.some(m => m && (p.title.includes(m) || p.extract.includes(m)))) || null;
+  } finally { clearTimeout(to); }
+}
+async function loadAbout(s) {
+  const key = 'about.' + s.key, cached = store.get(key, null), box = $('#about');
+  const show = a => {
+    if (!a || !a.text) { box.innerHTML = '<p class="muted">No write-up found for this song. Try <b>Search meaning</b>, or <b>Translate lyrics</b> to read what it says.</p>'; return; }
+    box.innerHTML = a.text.split(/\n+/).slice(0, 3).map(t => '<p>' + esc(t) + '</p>').join('') +
+      '<p class="src">From <a href="' + esc(a.url) + '" target="_blank" rel="noopener">Wikipedia</a>' + (a.lang === 'zh' ? ' (Chinese) · <a href="https://translate.google.com/?sl=zh-CN&tl=en&op=translate&text=' + encodeURIComponent(a.text.slice(0, 3000)) + '" target="_blank" rel="noopener">Translate</a>' : '') + '</p>';
+  };
+  if (cached) return show(cached);
+  box.innerHTML = '<p class="muted">Looking it up…</p>';
+  const t = simp(s.title).replace(/\s*[（(\[【].*?[)）\]】]\s*/g, '').trim(), orig = String(s.title).replace(/\s*[（(\[【].*?[)）\]】]\s*/g, '').trim(), artist = simp(s.artist || '').split(/[\s,&、]+/)[0];
+  try {
+    let p = await wikiLookup('en', t + ' ' + (s.artist || '') + ' song', [t, orig]), lang = 'en';
+    if (!p && [...t].some(isZh)) { p = await wikiLookup('zh', t + ' ' + artist, [t]); lang = 'zh'; }
+    const a = p ? { text: p.extract.trim(), url: p.fullurl, lang } : { text: '' };
+    if (p) store.set(key, a);
+    if (song && song.key === s.key) show(a);
+  } catch (e) { log('wiki failed', e); box.innerHTML = '<p class="muted">Couldn’t look this up right now (no internet?).</p>'; }
+}
+function openSongInfo() {
   if (!song) return;
+  $('#iT').textContent = simp(song.title) || 'Lyrics';
+  $('#iP').textContent = song.lang === 'zh' ? pyText(simp(song.title)) : '';
+  $('#iA').textContent = withPy(song.artist || '');
+  const lyr = song.lines.filter(l => !l.credit).map(l => l.text).join('\n').slice(0, 4500);
+  $('#aTrans').href = 'https://translate.google.com/?sl=auto&tl=en&op=translate&text=' + encodeURIComponent(lyr);
+  $('#aMeaning').href = 'https://www.google.com/search?q=' + encodeURIComponent(simp(song.title) + ' ' + simp(song.artist || '') + ' 歌词 含义 meaning');
   const alts = song.alts && song.alts.length > 1 ? song.alts : null;
   $('#verList').innerHTML = alts ? alts.map(r => resultRow(r, keyOf(r) === song.key ? 'Playing' : null)).join('') : '<p class="msg">No other versions found. Use search on the main screen to try a different spelling.</p>';
-  open('#shVer');
-};
+  open('#shVer'); $('#shVer').scrollTop = 0;
+  loadAbout(song);
+}
+$('#bSong').onclick = openSongInfo;
+$('#bInfoSong').onclick = openSongInfo;
 $('#verList').onclick = e => { const b = e.target.closest('.res'); if (!b) return; const r = song.alts.find(x => String(x.id) === b.dataset.id); closeAll(); if (r) openRecord(recFromLrclib(r), song.alts); };
 const howUrl = APP_URL + '?title=';
 const aiPrompt = 'Create a shortcut named "ChangAlong" that does this:\n'

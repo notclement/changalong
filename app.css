@@ -55,7 +55,7 @@ textarea.field{min-height:160px;font:15px/1.5 var(--han);resize:vertical;backgro
 @keyframes beat{50%{transform:scale(.6);opacity:.6}}
 
 /* sing */
-.shead{width:100%;max-width:var(--wide);margin:0 auto;padding:8px 10px 6px;display:grid;grid-template-columns:44px 1fr 44px 44px;align-items:center;gap:2px}
+.shead{width:100%;max-width:var(--wide);margin:0 auto;padding:8px 10px 6px;display:grid;grid-template-columns:44px 1fr 44px 44px 44px;align-items:center;gap:2px}
 .song{text-align:center;padding:2px 6px;border-radius:12px;min-height:44px}
 .song .t{font:600 17px/1.25 var(--han);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .song .tp{font-size:12.5px;line-height:1.25;color:var(--hl);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -145,6 +145,9 @@ textarea.field{min-height:160px;font:15px/1.5 var(--han);resize:vertical;backgro
 .row{display:flex;align-items:center;gap:12px}
 .row input[type=range]{flex:1;accent-color:var(--hl);height:44px}
 .bigA{font-size:22px;font-weight:700}.sample{font-weight:700;width:2.2em;text-align:right}
+.ip{color:var(--hl);font-size:14px;margin-top:-6px}.ia{color:var(--dim);font-size:14px}
+.about{font-size:15px;line-height:1.6}.about p{margin:0 0 8px}.about .src{font-size:12.5px;color:var(--dim)}.about .src a{color:var(--hl)}
+a.btn{display:grid;place-items:center;text-align:center;font-size:15px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
 .steps{padding-left:20px;margin:12px 0 0;display:grid;gap:10px}
 .steps code{display:block;margin-top:6px;padding:8px 10px;border-radius:10px;background:var(--sf2);font-size:12.5px;overflow-wrap:anywhere}

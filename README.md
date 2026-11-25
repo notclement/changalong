@@ -54,7 +54,7 @@ Suggestions come instantly from your recent songs, favourites and a built-in lis
 | Sync | Tap the line being sung, or "Tap as the next line starts" |
 | Lyrics behind / ahead | Behind (+0.5 s) / Ahead (−0.5 s), remembered per song |
 | Fix a wrong reading (多音字) | Press and hold the syllable, pick the reading |
-| Other versions (live, remaster) | Tap the song title |
+| Song info | ⓘ button or tap the title: about the song (Wikipedia, English first, else Chinese with a Translate link), Translate lyrics, Search meaning, other versions |
 | Display | Settings: 汉字 + pinyin (pinyin under each character) or Pinyin only, Simplified or as written, text size, dark/light |
 | Duets | Lines marked 男 / 女 / 合, with or without a colon (or singer names) are coloured: Him blue, Her pink, Both green, with a heads-up before each change |
 | Pause | Pause button, bottom right |
