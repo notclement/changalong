@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '1.0.1';
+const VERSION = '1.0.2';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -422,7 +422,7 @@ function scrollToLine(i, instant) {
 let lastBanner = null;
 function banner(what) {
   if (what === lastBanner) return; lastBanner = what; const b = $('#banner');
-  if (what === 'wait') { b.className = 'banner cta'; b.innerHTML = '<b>Tap the line being sung right now.</b><br><span class="muted">Lyrics then scroll in time.</span> <button class="link" id="bTop">Start from the top</button>'; return; }
+  if (what === 'wait') what = '';                                   // waiting: no prompt, the user taps a line when singing starts
   b.className = 'banner'; b.innerHTML = what || '';
 }
 const now = () => running ? base + (performance.now() - t0) / 1000 : base;
@@ -506,7 +506,6 @@ $('#bTap').onclick = () => {
   if (mode !== 'run') { syncToLine(0); return; }
   syncToLine(cur + 1);
 };
-$('#banner').addEventListener('click', e => { if (e.target.id === 'bTop') { startAt(0); go(-1); scrollToLine(0); } });
 
 // tap a line = "this one is being sung now"; press-and-hold a syllable = fix its reading
 let holdT = null, held = false;
