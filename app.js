@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.1.1';
+const VERSION = '0.2.0';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -20,7 +20,7 @@ let song = null;          // {key,title,artist,album,dur,timed,lines,alts}
 let mode = 'idle';        // idle | wait | run | tap
 let cur = -1, base = 0, t0 = 0, running = false, ended = false, follow = true, followT = 0, seeking = false;
 let lastResults = [];
-const prefs = { mode: store.get('mode', 'm-both'), size: store.get('size', 30), skin: store.get('skin', 'dark') };
+const prefs = { mode: store.get('mode', 'm-both') === 'm-py' ? 'm-py' : 'm-both', size: store.get('size', 30), skin: store.get('skin', 'dark') };
 
 /* ---------- LRC + pinyin ---------- */
 function parseLRC(txt) {
@@ -141,7 +141,7 @@ function renderStage() {
   applyPrefs();
 }
 function applyPrefs() {
-  const st = $('#stage'); st.classList.remove('m-py', 'm-both', 'm-hz'); st.classList.add(prefs.mode); st.classList.toggle('wait', mode === 'wait');
+  const st = $('#stage'); st.classList.remove('m-py', 'm-both'); st.classList.add(prefs.mode); st.classList.toggle('wait', mode === 'wait');
   document.documentElement.style.setProperty('--fs', prefs.size + 'px');
   document.documentElement.style.colorScheme = prefs.skin;
   const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = prefs.skin === 'light' ? '#fbf6f1' : '#140d1c';

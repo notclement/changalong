@@ -33,7 +33,7 @@ Optional: Settings → Accessibility → Touch → Back Tap → Double Tap → C
 | Lyrics behind / ahead | Behind (+0.5 s) / Ahead (−0.5 s), remembered per song |
 | Fix a wrong reading (多音字) | Press and hold the syllable, pick the reading |
 | Other versions (live, remaster) | Tap the song title |
-| Display | Settings: Pinyin / Both / 汉字, text size, dark/light |
+| Display | Settings: 汉字 + pinyin (pinyin under each character) or Pinyin only, text size, dark/light |
 | No timestamps | Plain lyrics switch to tap-to-advance |
 
 ## Development
