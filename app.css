@@ -258,3 +258,7 @@ html,body,button,a,input,.seg,#stage{touch-action:manipulation}
 /* sync tag colours: green = lyrics move on their own, amber = tap along */
 .song .tg span.t-sync,.tag.t-sync{color:light-dark(#1f8a4c,#4fd18b);background:color-mix(in srgb,#4fd18b 14%,transparent);border-color:color-mix(in srgb,#4fd18b 40%,transparent)}
 .song .tg span.t-manual,.tag.t-manual{color:light-dark(#b0700a,#ffc15a);background:color-mix(in srgb,#ffc15a 14%,transparent);border-color:color-mix(in srgb,#ffc15a 40%,transparent)}
+
+/* Korean: romanisation under each word */
+.u.ko i{font-size:calc(var(--fs)*.8)}
+.u.ko b{font-size:calc(var(--fs)*.42);white-space:nowrap}

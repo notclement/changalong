@@ -67,6 +67,9 @@ Made by [Clement](https://www.linkedin.com/in/clementsg).
 
 ## Changelog
 
+**1.1.7**
+- Korean songs show romanisation under each word and the title, spelled as sung (사랑해 → saranghae)
+
 **1.1.6**
 - Removed the ⓘ button (tap the title for Song info); title centred
 - Sync tags coloured: green = scrolls by itself, amber = Lyrics only, tap along

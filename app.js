@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '1.1.6';
+const VERSION = '1.1.7';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -21,7 +21,7 @@ function detectLang(t) {
   if (han >= 8 || (han && han >= letters * 0.25)) return 'zh';
   return letters ? 'other' : 'zh';
 }
-const LANG_TAG = { ja: 'Japanese', ko: 'Korean', other: 'No pinyin' };
+const LANG_TAG = { ja: 'Japanese', ko: 'Korean · romanised', other: 'No pinyin' };
 const log = (...a) => console.log('[changalong v' + VERSION + ']', new Date().toISOString().slice(5, 19).replace('T', ' '), '|', ...a);
 const store = {
   get(k, d) { try { const v = localStorage.getItem('pk.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
@@ -96,7 +96,8 @@ function toWords(text, ct) {
     const pieces = (KANA.test(tok) || isZh(chars[0])) ? chars : [tok];
     for (const pc of pieces) {
       const n = [...pc].length, a = ct ? ct[idx] : null, b = ct ? ct[idx + n - 1] : null;
-      units.push({ h: pc, p: '', zh: false, tx: true, tm: a && b ? [a[0], b[1]] : null }); idx += n;
+      const ko = HANGUL.test(pc) && window.romanizeKo;              // Korean: romanisation under each word, like pinyin
+      units.push({ h: pc, p: ko ? window.romanizeKo(pc) : '', zh: false, tx: !ko, ko: !!ko, tm: a && b ? [a[0], b[1]] : null }); idx += n;
     }
   }
   return units;
@@ -417,7 +418,7 @@ function openRecord(rec, alts) {
   const tags = [lang === 'zh' ? (song.yue ? 'Cantonese' : '') : LANG_TAG[lang], syncTag, song.duet ? 'Duet' : '', versionTag(song.title + ' ' + (song.album || '')), song.toSimp ? '繁→简' : ''];
   song.tags = tags;
   $('#sG').innerHTML = tags.filter(Boolean).map(t => '<span class="' + tagCls(t).trim() + '">' + esc(t) + '</span>').join('');
-  setLine($('#sP'), lang === 'zh' ? esc(pyText(simp(song.title))) : '');
+  setLine($('#sP'), esc(titleReading(song.title, lang)));
   showSingerZh(song);
   $('#tEnd').textContent = song.timed ? fmt(song.dur) : '—';
   $('#seek').disabled = !song.timed;
@@ -436,7 +437,7 @@ function openRecord(rec, alts) {
 function renderStage() {
   const tag = l => { if (!l.turn) return ''; const n = song.names && song.names[l.v]; return '<span class="vt">' + esc(VOICES[l.v].tag) + ' ' + esc(n || VOICES[l.v].label) + '</span>'; };
   $('#stage').innerHTML = song.lines.map((l, i) => l.credit ? '<div class="ln credit" data-i="' + i + '">' + esc(l.text) + '</div>' : '<div class="ln' + (l.v ? ' v-' + l.v : '') + '" data-i="' + i + '">' + (l.lead ? '<span class="cd" aria-hidden="true"><i></i><i></i><i></i></span>' : '') + tag(l) + l.u.map((u, j) =>
-    (u.zh ? '<span class="u' + (u.fix ? ' fix' : '') + '" data-j="' + j + '"><b>' + esc(u.p) + '</b><i>' + esc(u.h) + '</i></span>'
+    (u.zh || u.ko ? '<span class="u' + (u.fix ? ' fix' : '') + (u.ko ? ' ko' : '') + '" data-j="' + j + '"><b>' + esc(u.p) + '</b><i>' + esc(u.h) + '</i></span>'
           : '<span class="u x' + (u.tx ? ' tx' : '') + '" data-j="' + j + '">' + (u.tx ? '' : '<b>\u00a0</b>') + '<i>' + esc(u.h) + '</i></span>')).join('') + '</div>').join('');
   applyPrefs();
 }
@@ -721,6 +722,12 @@ async function aiText(prompt, onWait, ok) {
   await new Promise(r => setTimeout(r, 16000));                    // Pollinations' free limit: wait and try once more
   return good(await pollinations(prompt, 'https://text.pollinations.ai/'));
 }
+// Reading shown under a title: pinyin for Chinese, romanisation for Korean (Hangul words only).
+function titleReading(t, lang) {
+  if (lang === 'zh') return pyText(simp(t));
+  if (lang === 'ko' && window.romanizeKo) return String(t || '').split(/\s+/).map(w => HANGUL.test(w) ? window.romanizeKo(w) : w).join(' ');
+  return '';
+}
 // Tap button: big round button while not yet in sync (or for untimed lyrics), small once the song is following along.
 function tapSize() { const b = $('#bTap'); if (b) b.classList.toggle('tb', !song || !song.timed || mode !== 'run'); }
 // Singer line: Chinese name + pinyin. Shazam often gives an English/romanised name ("Vae Xu"); the AI looks up the Chinese one (许嵩).
@@ -798,7 +805,7 @@ async function loadAbout(s) {
 function openSongInfo() {
   if (!song) return;
   $('#iT').textContent = simp(song.title) || 'Lyrics';
-  $('#iP').textContent = song.lang === 'zh' ? pyText(simp(song.title)) : '';
+  $('#iP').textContent = titleReading(song.title, song.lang);
   $('#iA').textContent = artistLine(song.artistZh || song.artist) + (song.artistZh ? ' · ' + song.artist : '');
   $('#iTags').innerHTML = tagHtml(song.tags || []);
   const lyr = song.lines.filter(l => !l.credit).map(l => l.text).join('\n').slice(0, 4500);
