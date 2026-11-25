@@ -1,6 +1,6 @@
 {
-  "name": "Pinyin Karaoke",
-  "short_name": "Pinyin KTV",
+  "name": "ChàngAlong",
+  "short_name": "ChàngAlong",
   "description": "Sing Chinese songs from Hanyu Pinyin, in time with the music.",
   "start_url": "./",
   "scope": "./",

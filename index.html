@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#140d1c">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Pinyin KTV">
-<title>Pinyin Karaoke</title>
+<meta name="apple-mobile-web-app-title" content="ChàngAlong">
+<title>ChàngAlong</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-192.png">
@@ -19,12 +19,12 @@
   <!-- BROWSE: listen, search, recent, favourites -->
   <section id="browse" class="view">
     <header class="bhead">
-      <h1>Pinyin Karaoke</h1>
+      <h1>Chàng<span style="color:var(--hl)">Along</span></h1>
       <button class="ib" id="bSet1" aria-label="Settings"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
     </header>
     <div class="scroll-y">
       <div class="listen-hero">
-        <a class="big" id="bListen" href="shortcuts://run-shortcut?name=Pinyin%20Karaoke">Listen</a>
+        <a class="big" id="bListen" href="shortcuts://run-shortcut?name=ChangAlong">Listen</a>
         <p class="hero-s">Shazam finds the song, then the lyrics open here in pinyin.</p>
         <button class="link" id="bHowListen">First time? Set up the Shortcut</button>
       </div>
@@ -60,7 +60,7 @@
       <button class="tap" id="bTap">Tap as the next line starts</button>
       <div class="dock">
         <button class="nudge" id="bBehind" aria-label="Lyrics are behind the singer: jump ahead half a second">Behind<small>+0.5s</small></button>
-        <div class="mid"><a class="mic" id="bListen2" href="shortcuts://run-shortcut?name=Pinyin%20Karaoke" aria-label="Listen for the next song"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></a><div class="mid-t" id="midT">Next song</div></div>
+        <div class="mid"><a class="mic" id="bListen2" href="shortcuts://run-shortcut?name=ChangAlong" aria-label="Listen for the next song"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></a><div class="mid-t" id="midT">Next song</div></div>
         <button class="nudge" id="bAhead" aria-label="Lyrics are ahead of the singer: hold back half a second">Ahead<small>−0.5s</small></button>
       </div>
     </footer>
@@ -93,7 +93,7 @@
     <li>Add <b>Get Details of Shazam Media</b> → <b>Title</b>. Then add <b>URL Encode</b>. Add <b>Set Variable</b> named <b>T</b>.</li>
     <li>Add <b>Get Details of Shazam Media</b> → <b>Artist</b> (tap the input and pick <i>Shazam Media</i> again), then <b>URL Encode</b>, then <b>Set Variable</b> named <b>A</b>.</li>
     <li>Add <b>Text</b> with:<br><code id="tplUrl"></code><button class="link" id="bCopyUrl">Copy</button></li>
-    <li>Add <b>Open URLs</b>. Done. Tip: Settings → Accessibility → Touch → Back Tap → Double Tap → <i>Pinyin Karaoke</i>.</li>
+    <li>Add <b>Open URLs</b>. Done. Tip: Settings → Accessibility → Touch → Back Tap → Double Tap → <i>ChangAlong</i>.</li>
   </ol>
 </section>
 

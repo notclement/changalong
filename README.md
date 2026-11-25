@@ -1,8 +1,8 @@
-# Pinyin Karaoke
+# ChàngAlong (唱 Along)
 
 Sing Chinese songs at karaoke without reading characters. Shows lyrics in Hanyu Pinyin with tone marks, highlighted in time with the music.
 
-**Live app:** https://notclement.github.io/pinyin-karaoke/
+**Live app:** https://notclement.github.io/changalong/
 
 ## How it works
 
@@ -15,15 +15,15 @@ Everything runs in the browser. No account, no backend, no audio leaves the phon
 
 ## Shortcut setup (once)
 
-In the Shortcuts app, create a shortcut named exactly **Pinyin Karaoke**:
+In the Shortcuts app, create a shortcut named exactly **ChangAlong**:
 
 1. Recognize Music
 2. Get Details of Shazam Media → Title → URL Encode → Set Variable `T`
 3. Get Details of Shazam Media → Artist → URL Encode → Set Variable `A`
-4. Text: `https://notclement.github.io/pinyin-karaoke/?title=[T]&artist=[A]`
+4. Text: `https://notclement.github.io/changalong/?title=[T]&artist=[A]`
 5. Open URLs
 
-Optional: Settings → Accessibility → Touch → Back Tap → Double Tap → Pinyin Karaoke.
+Optional: Settings → Accessibility → Touch → Back Tap → Double Tap → ChangAlong.
 
 ## Controls
 
