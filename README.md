@@ -45,7 +45,7 @@ Grey tags by the title and in search results: **Word synced / Synced / Lyrics on
 ## Search
 
 Type a title, part of a title (你那么) or the first letters of its pinyin (nnmat → 你那么爱她).
-Suggestions come instantly from your recent songs, favourites and a built-in list of ~200 popular KTV songs (`vendor/catalog.js`; Cantopop entries switch to jyutping automatically). Lyrics always come from LRCLIB.
+Suggestions come instantly from your recent songs, favourites and a built-in list of ~330 popular KTV songs (`vendor/catalog.js`; Cantopop entries switch to jyutping automatically). Lyrics always come from LRCLIB.
 
 ## Controls
 

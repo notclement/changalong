@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.9.3';
+const VERSION = '0.9.4';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -209,6 +209,7 @@ function matchLocal(q) {
   return hits.sort((a, b) => b[0] - a[0]).slice(0, 8).map(x => x[1]);
 }
 let lastSugg = [];
+const INIT_HINT = '<p class="msg">No match for those initials. Initials work for about 300 popular KTV songs and any song you’ve opened before. For others, type the title in Chinese once, and its initials will work after that.</p>';
 function suggRow(e, i) {
   return '<button class="res" data-sugg="' + i + '"><span class="art">' + esc(e.title.charAt(0)) + '</span><span class="rm"><div class="t">' + esc(e.title) + '</div>' + tpRow(e.title) + '<div class="a">' + esc(withPy(e.artist)) + '</div></span><span class="badges">' + (e.key ? '<span class="badge">Recent</span>' : '') + (e.yue ? '<span class="badge">Cantonese</span>' : '') + '</span></button>';
 }
@@ -674,7 +675,7 @@ $('#q').addEventListener('input', () => {
   syncClear(); const q = $('#q').value.trim();
   if (!q) { $('#results').innerHTML = ''; return; }
   lastSugg = matchLocal(q);
-  $('#results').innerHTML = lastSugg.length ? '<div class="sec">Suggestions</div>' + lastSugg.map(suggRow).join('') : '';
+  $('#results').innerHTML = lastSugg.length ? '<div class="sec">Suggestions</div>' + lastSugg.map(suggRow).join('') : (/^[a-z]{2,8}$/i.test(q.replace(/\s+/g, '')) ? INIT_HINT : '');
 });
 $('#bClear').onclick = () => { $('#q').value = ''; syncClear(); $('#results').innerHTML = ''; lastResults = []; $('#q').focus(); };
 $('#bClearPaste').onclick = () => { $('#paste').value = ''; $('#paste').focus(); };
