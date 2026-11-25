@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.9.4';
+const VERSION = '0.9.5';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -578,24 +578,14 @@ $('#bFav').onclick = () => {
   store.set('fav', f); localIdx = null; $('#bFav').classList.toggle('on', on); toast(on ? 'Saved to favourites' : 'Removed from favourites'); renderLists();
 };
 /* ---------- song info: about (Wikipedia), translate lyrics, search meaning, other versions ---------- */
-async function wikiLookup(lang, q, mustHave) {
-  const u = 'https://' + lang + '.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=' + encodeURIComponent(q) +
-    '&gsrlimit=5&prop=extracts|info&exintro=1&explaintext=1&exsentences=5&inprop=url&format=json&origin=*' + (lang === 'zh' ? '&variant=zh-cn' : '');
-  log('wiki', lang, q);
-  const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 10000);
-  try {
-    const j = await (await fetch(u, { signal: ctl.signal })).json();
-    const pages = Object.values((j.query && j.query.pages) || {}).sort((a, b) => a.index - b.index);
-    return pages.find(p => p.extract && mustHave.some(m => m && (p.title.includes(m) || p.extract.includes(m)))) || null;
-  } finally { clearTimeout(to); }
-}
 // Short AI write-up of the song's meaning (Pollinations: free, no key; anonymous use is rate-limited).
-// Grounded on the song's own lyrics so it doesn't invent a story; Wikipedia is the fallback.
-async function aiAbout(s) {
+// Grounded on the song's own lyrics so it doesn't invent a story.
+async function aiAbout(s, onWait) {
   const lyr = s.lines.filter(l => !l.credit).map(l => l.text).join(' / ').slice(0, 450);
   const prompt = 'In 3 or 4 short sentences of simple English, explain what the song "' + simp(s.title) + '" by ' + (s.artist || 'unknown') +
     ' is about and the feeling it expresses, for a karaoke singer who cannot read Chinese. Base it on these lyrics. No quotes from the lyrics, no markdown, no intro phrase. Lyrics: ' + lyr;
-  for (const base of ['https://text.pollinations.ai/', 'https://gen.pollinations.ai/text/']) {
+  for (const [k, base] of [[0, 'https://text.pollinations.ai/'], [1, 'https://gen.pollinations.ai/text/'], [2, 'https://text.pollinations.ai/']]) {
+    if (k === 2) { if (onWait) onWait(); await new Promise(r => setTimeout(r, 16000)); }   // free tier allows ~1 request per 15s: wait and try once more
     const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 25000);
     try {
       log('ai', base);
@@ -608,28 +598,16 @@ async function aiAbout(s) {
   return null;
 }
 async function loadAbout(s) {
-  const key = 'about2.' + s.key, cached = store.get(key, null), box = $('#about');
-  const show = a => {
-    if (!a || !a.text) { box.innerHTML = '<p class="muted">Couldn’t get a write-up right now. Try again later, or use <b>Translate the lyrics</b> below.</p>'; return; }
-    box.innerHTML = a.text.split(/\n+/).slice(0, 3).map(t => '<p>' + esc(t) + '</p>').join('') + (a.ai
-      ? '<p class="src">Written by AI from the lyrics, so it may not be exact.</p>'
-      : '<p class="src">From <a href="' + esc(a.url) + '" target="_blank" rel="noopener">Wikipedia</a>' + (a.lang === 'zh' ? ' (Chinese) · <a href="https://translate.google.com/?sl=zh-CN&tl=en&op=translate&text=' + encodeURIComponent(a.text.slice(0, 3000)) + '" target="_blank" rel="noopener">Translate</a>' : '') + '</p>');
+  const key = 'about3.' + s.key, cached = store.get(key, null), box = $('#about');
+  const show = t => {
+    box.innerHTML = t ? t.split(/\n+/).slice(0, 3).map(x => '<p>' + esc(x) + '</p>').join('') + '<p class="src">Written by AI from the lyrics, so it may not be exact.</p>'
+                      : '<p class="muted">No write-up available for this song right now.</p>';
   };
   if (cached) return show(cached);
   box.innerHTML = '<p class="muted">Writing a short summary…</p>';
-  let a = null;
-  const ai = await aiAbout(s);
-  if (ai) a = { text: ai, ai: true };
-  else {
-    const t = simp(s.title).replace(/\s*[（(\[【].*?[)）\]】]\s*/g, '').trim(), orig = String(s.title).replace(/\s*[（(\[【].*?[)）\]】]\s*/g, '').trim(), artist = simp(s.artist || '').split(/[\s,&、]+/)[0];
-    try {
-      let p = await wikiLookup('en', t + ' ' + (s.artist || '') + ' song', [t, orig]), lang = 'en';
-      if (!p && [...t].some(isZh)) { p = await wikiLookup('zh', t + ' ' + artist, [t]); lang = 'zh'; }
-      if (p) a = { text: p.extract.trim(), url: p.fullurl, lang };
-    } catch (e) { log('wiki failed', e); }
-  }
-  if (a) store.set(key, a);
-  if (song && song.key === s.key) show(a);
+  const t = await aiAbout(s, () => { if (song && song.key === s.key) box.innerHTML = '<p class="muted">The free AI is busy, trying again in a few seconds…</p>'; });
+  if (t) store.set(key, t);
+  if (song && song.key === s.key) show(t);
 }
 function openSongInfo() {
   if (!song) return;
