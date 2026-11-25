@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.9.9';
+const VERSION = '1.0.0';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -725,16 +725,8 @@ $('#tplUrl').textContent = howUrl;
 $('#aiPrompt').textContent = aiPrompt;
 $('#bCopyPrompt').onclick = async () => { try { await navigator.clipboard.writeText(aiPrompt); toast('Prompt copied'); } catch (e) { toast('Copy failed: select the text instead'); } };
 $('#bHowListen').onclick = () => open('#shHow'); $('#bHowListen2').onclick = () => open('#shHow');
-$('#bPaste').onclick = () => open('#shPaste');
 $('#bInfo').onclick = () => open('#shInfo');
 $('#sP').addEventListener('click', e => { if (e.target.closest('.tag')) { e.stopPropagation(); open('#shInfo'); } });
-$('#bSample').onclick = () => { $('#paste').value = '[00:03.00]你好世界\n[00:07.00]我想和你一起看日落\n[00:11.50]长大以后还会记得\n[00:16.00]这首歌的快乐'; };
-$('#bUse').onclick = () => {
-  const txt = $('#paste').value.trim(); if (!txt) { toast('Paste some lyrics first'); return; }
-  const first = txt.split('\n').map(l => l.replace(/\[[^\]]*\]/g, '').trim()).find(Boolean) || 'My lyrics';
-  const key = 'p' + [...txt].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7);
-  closeAll(); openRecord({ key, title: first.slice(0, 16), artist: 'Pasted', lrc: txt, dur: 0 });
-};
 
 /* ---------- browse events ---------- */
 const syncClear = () => { $('#bClear').hidden = !$('#q').value; };
@@ -745,7 +737,6 @@ $('#q').addEventListener('input', () => {
   $('#results').innerHTML = lastSugg.length ? '<div class="sec">Suggestions</div>' + lastSugg.map(suggRow).join('') : (/^[a-z]{2,8}$/i.test(q.replace(/\s+/g, '')) ? INIT_HINT : '');
 });
 $('#bClear').onclick = () => { $('#q').value = ''; syncClear(); $('#results').innerHTML = ''; lastResults = []; $('#q').focus(); };
-$('#bClearPaste').onclick = () => { $('#paste').value = ''; $('#paste').focus(); };
 $('#fSearch').onsubmit = e => { e.preventDefault(); $('#q').blur(); doSearch($('#q').value); };
 $('#results').onclick = e => { const b = e.target.closest('.res'); if (!b) return; if (b.dataset.sugg != null) { openFromMeta(lastSugg[+b.dataset.sugg]); return; } const r = lastResults.find(x => String(x.id) === b.dataset.id); if (r) openRecord(recFromLrclib(r), lastResults.filter(x => x.trackName === r.trackName || x.artistName === r.artistName)); };
 $('#lists').onclick = e => { const b = e.target.closest('.res'); if (!b) return; const rec = store.get('song.' + b.dataset.key, null); if (rec) openRecord(rec); else toast('Not cached: search for it again'); };

@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="app.css?v=0.9.9">
+<link rel="stylesheet" href="app.css?v=1.0.0">
 </head>
 <body>
 <div class="app">
@@ -35,7 +35,6 @@
       <div id="results" aria-live="polite"></div>
       <div id="lists"></div>
       <div class="foot-links">
-        <button class="link" id="bPaste">Paste lyrics</button>
         <span class="muted">Lyrics: LRCLIB · Pinyin: pinyin-pro</span>
       </div>
     </div>
@@ -92,12 +91,6 @@
   <a class="btn ghost" id="aTrans" target="_blank" rel="noopener" style="margin-top:14px">Translate the lyrics</a>
   <div id="verList" hidden></div></section>
 
-<section class="sheet" id="shPaste" aria-label="Paste lyrics"><div class="grab"></div><h2>Paste lyrics</h2>
-  <textarea class="field" id="paste" placeholder="[00:12.30]你好世界&#10;[00:16.80]我想和你一起看日落&#10;&#10;Plain lines work too: you tap to move on."></textarea>
-  <button class="link" id="bClearPaste" style="padding-left:0">Clear</button>
-  <div class="two"><button class="btn ghost" id="bSample">Try example</button><button class="btn" id="bUse">Use these lyrics</button></div>
-</section>
-
 <section class="sheet" id="shHow" aria-label="Shortcut setup"><div class="grab"></div><h2>Set up “Listen” (once)</h2>
   <p class="note">iPhone's built-in Shazam does the listening. A Shortcut named <b>ChangAlong</b> passes the song to this page.</p>
   <h3>Quick way: let AI build it</h3>
@@ -144,9 +137,9 @@
 <div class="pop" id="pop"><p>Reading for <b id="popH"></b></p><div class="chips" id="popC"></div></div>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="vendor/pinyin-pro.js?v=0.9.9"></script>
-<script src="vendor/t2s.js?v=0.9.9"></script>
-<script src="vendor/catalog.js?v=0.9.9"></script>
-<script src="app.js?v=0.9.9"></script>
+<script src="vendor/pinyin-pro.js?v=1.0.0"></script>
+<script src="vendor/t2s.js?v=1.0.0"></script>
+<script src="vendor/catalog.js?v=1.0.0"></script>
+<script src="app.js?v=1.0.0"></script>
 </body>
 </html>
