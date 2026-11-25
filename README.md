@@ -67,6 +67,10 @@ Made by [Clement](https://www.linkedin.com/in/clementsg).
 
 ## Changelog
 
+**1.1.6**
+- Removed the ⓘ button (tap the title for Song info); title centred
+- Sync tags coloured: green = scrolls by itself, amber = Lyrics only, tap along
+
 **1.1.5**
 - Line being sung is white, turning orange as it's sung; all other lines grey
 

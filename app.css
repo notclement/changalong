@@ -62,7 +62,7 @@ textarea.field{min-height:160px;font:15px/1.5 var(--han);resize:vertical;backgro
 @keyframes beat{50%{transform:scale(.6);opacity:.6}}
 
 /* sing */
-.shead{width:100%;max-width:var(--wide);margin:0 auto;padding:8px 10px 6px;display:grid;grid-template-columns:88px 1fr 44px 44px;align-items:center;gap:2px}
+.shead{width:100%;max-width:var(--wide);margin:0 auto;padding:8px 10px 6px;display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:2px}
 .song{text-align:center;padding:2px 6px;border-radius:12px;min-height:44px}
 .song .t{font:600 17px/1.25 var(--han);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .song .tp{font-size:12.5px;line-height:1.25;color:var(--hl);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -254,3 +254,7 @@ html,body,button,a,input,.seg,#stage{touch-action:manipulation}
 /* only the line being sung is white (orange as it's sung); every other line is grey */
 .ln:not(.now):not([class*=" v-"]) .u i{color:var(--dim)}
 .ln:not(.now):not([class*=" v-"]) .u b{color:color-mix(in srgb,var(--dim) 80%,transparent)}
+
+/* sync tag colours: green = lyrics move on their own, amber = tap along */
+.song .tg span.t-sync,.tag.t-sync{color:light-dark(#1f8a4c,#4fd18b);background:color-mix(in srgb,#4fd18b 14%,transparent);border-color:color-mix(in srgb,#4fd18b 40%,transparent)}
+.song .tg span.t-manual,.tag.t-manual{color:light-dark(#b0700a,#ffc15a);background:color-mix(in srgb,#ffc15a 14%,transparent);border-color:color-mix(in srgb,#ffc15a 40%,transparent)}

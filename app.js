@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '1.1.5';
+const VERSION = '1.1.6';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -351,7 +351,8 @@ function loadJyutping() {
 const VERSION_RX = [[/伴奏|instrumental|karaoke|ktv|off ?vocal/i, 'Instrumental'], [/live|現場|现场|演唱會|演唱会|concert/i, 'Live'], [/remix|mix\b|DJ/i, 'Remix'], [/acoustic|不插電|不插电|unplugged/i, 'Acoustic'], [/cover|翻唱/i, 'Cover']];
 const versionTag = t => { for (const [rx, name] of VERSION_RX) if (rx.test(t || '')) return name; return ''; };
 const DUET_RX = /^(?:\[[^\]]*\])+\s*[(（【\[]?\s*(?:男|女|合|M|F)\s*[)）】\]]?\s*[:： ]/m;
-const tagHtml = list => list.filter(Boolean).map(t => '<span class="tag">' + esc(t) + '</span>').join(' ');
+const tagCls = t => /^(Word synced|Synced)$/.test(t) ? ' t-sync' : t === 'Lyrics only' ? ' t-manual' : '';   // green = scrolls by itself, amber = you tap along
+const tagHtml = list => list.filter(Boolean).map(t => '<span class="tag' + tagCls(t) + '">' + esc(t) + '</span>').join(' ');
 
 /* ---------- load a song ---------- */
 function keyOf(r) { return 'l' + r.id; }
@@ -415,7 +416,7 @@ function openRecord(rec, alts) {
   setLine($('#sA'), esc(artistLine(song.artist)));
   const tags = [lang === 'zh' ? (song.yue ? 'Cantonese' : '') : LANG_TAG[lang], syncTag, song.duet ? 'Duet' : '', versionTag(song.title + ' ' + (song.album || '')), song.toSimp ? '繁→简' : ''];
   song.tags = tags;
-  $('#sG').innerHTML = tags.filter(Boolean).map(t => '<span>' + esc(t) + '</span>').join('');
+  $('#sG').innerHTML = tags.filter(Boolean).map(t => '<span class="' + tagCls(t).trim() + '">' + esc(t) + '</span>').join('');
   setLine($('#sP'), lang === 'zh' ? esc(pyText(simp(song.title))) : '');
   showSingerZh(song);
   $('#tEnd').textContent = song.timed ? fmt(song.dur) : '—';
@@ -808,7 +809,6 @@ function openSongInfo() {
   loadAbout(song);
 }
 $('#bSong').onclick = openSongInfo;
-$('#bInfoSong').onclick = openSongInfo;
 $('#verList').onclick = e => { const b = e.target.closest('.res'); if (!b) return; const r = song.alts.find(x => String(x.id) === b.dataset.id); closeAll(); if (r) openRecord(recFromLrclib(r), song.alts); };
 const howUrl = APP_URL + '?title=';
 const aiPrompt = 'Create a shortcut named "ChangAlong" that does this:\n'

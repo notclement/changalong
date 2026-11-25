@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="app.css?v=1.1.5">
+<link rel="stylesheet" href="app.css?v=1.1.6">
 </head>
 <body>
 <div class="app">
@@ -46,7 +46,6 @@
     <header class="shead">
       <button class="ib" id="bHome" aria-label="Back to search"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
       <button class="song" id="bSong" aria-label="Song and other versions"><div class="t" id="sT"></div><div class="tp" id="sP"></div><div class="a" id="sA"></div><div class="tg" id="sG"></div></button>
-      <button class="ib" id="bInfoSong" aria-label="Song info"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></button>
       <button class="ib" id="bSet2" aria-label="Display settings"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
       <div class="prog"><span id="tNow">0:00</span><input type="range" id="seek" min="0" max="1000" value="0" aria-label="Song position"><span id="tEnd">0:00</span></div>
     </header>
@@ -111,9 +110,9 @@
 <section class="sheet" id="shInfo" aria-label="What the tags mean"><div class="grab"></div><h2>What the tags mean</h2>
   <p class="note">Grey tags sit next to the song title. The first one tells you how precisely the lyrics are timed. That depends on the lyrics file, not on the app.</p>
   <dl class="tags">
-    <dt><span class="tag">Word synced</span></dt><dd>Every word has its own start time. The highlight follows the real rhythm: it lingers on held notes and speeds through fast parts. Best experience.</dd>
-    <dt><span class="tag">Synced</span></dt><dd>Only each line has a start time. Lines appear exactly on time; inside a line the highlight follows the song's pace, so it may not match every long or quick note.</dd>
-    <dt><span class="tag">Lyrics only</span></dt><dd>No timing at all. Tap <b>Next line</b> as you sing to move along.</dd>
+    <dt><span class="tag t-sync">Word synced</span></dt><dd>Every word has its own start time. The highlight follows the real rhythm: it lingers on held notes and speeds through fast parts. Best experience.</dd>
+    <dt><span class="tag t-sync">Synced</span></dt><dd>Only each line has a start time. Lines appear exactly on time; inside a line the highlight follows the song's pace, so it may not match every long or quick note.</dd>
+    <dt><span class="tag t-manual">Lyrics only</span></dt><dd>No timing at all. Tap <b>Next line</b> as you sing to move along.</dd>
   </dl>
   <h3>Other tags</h3>
   <dl class="tags">
