@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '1.0.7';
+const VERSION = '1.0.8';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -125,14 +125,40 @@ async function api(path) {
 }
 const rank = list => list.filter(r => !r.instrumental && (r.syncedLyrics || r.plainLyrics)).sort((a, b) => (!!b.syncedLyrics - !!a.syncedLyrics));
 async function searchQ(q) { return rank(await api('/search?q=' + encodeURIComponent(q))); }
-async function findByMeta(title, artist) {
-  const clean = s => String(s || '').replace(/[（(\[【].*?[）)\]】]/g, '').replace(/\s*[-–]\s*(live|remaster.*|伴奏|ktv).*$/i, '').trim();
+const cleanT = s => String(s || '').replace(/[（(\[【].*?[）)\]】]/g, '').replace(/\s*[-–]\s*(live|remaster.*|伴奏|ktv).*$/i, '').trim();
+const zhPart = s => [...String(s || '')].filter(isZh).join('');        // "你我他的故事 The Story of Us Three" → "你我他的故事"
+const squash = s => simp(String(s || '')).replace(/[\s·・.,，。'’!?！？-]+/g, '').toLowerCase();
+const sameSong = (r, t) => { const a = squash(r.trackName), b = squash(t); return !!a && !!b && (a.includes(b) || (b.includes(a) && a.length >= 2)); };
+async function findByMeta(title, artist, onStep) {
   const tries = [];
   if (title && artist) tries.push('/search?track_name=' + encodeURIComponent(title) + '&artist_name=' + encodeURIComponent(artist));
-  if (title && artist) tries.push('/search?q=' + encodeURIComponent(clean(title) + ' ' + clean(artist)));
-  if (title) tries.push('/search?q=' + encodeURIComponent(clean(title)));
+  if (title && artist) tries.push('/search?q=' + encodeURIComponent(cleanT(title) + ' ' + cleanT(artist)));
+  if (title) tries.push('/search?q=' + encodeURIComponent(cleanT(title)));
   for (const p of tries) { const r = rank(await api(p)); if (r.length) return r; }
-  return [];
+  return findVariants(cleanT(title), cleanT(artist), onStep);
+}
+// Nothing under the exact name: try the Chinese part only, Traditional/Simplified spellings, then ask the AI for the Chinese title.
+// Only songs whose title matches are opened; anything else comes back as .near (closest results) for the user to pick.
+async function findVariants(title, artist, onStep) {
+  const near = [], seen = new Set(), done = new Set();
+  const tryQ = async (q, want) => {
+    q = q.trim(); if (!q || done.has(q)) return null; done.add(q); log('variant search', q);
+    const r = await searchQ(q), hit = r.filter(x => sameSong(x, want));
+    for (const x of r) if (!seen.has(x.id)) { seen.add(x.id); near.push(x); }
+    return hit.length ? hit : null;
+  };
+  const zt = zhPart(title) || title, za = zhPart(artist), tr = window.toTraditional || (s => s);
+  onStep && onStep('Trying other spellings…');
+  for (const [q, want] of [[zt + ' ' + za, zt], [zt, zt], [tr(zt) + ' ' + tr(za), zt], [tr(zt), zt], [simp(zt), zt]]) {
+    const hit = await tryQ(q, want); if (hit) return hit;
+  }
+  onStep && onStep('Asking the AI for the Chinese title…');
+  const ai = await aiName(title, artist, () => onStep && onStep('The free AI is busy, trying again in a few seconds…'));
+  if (ai) for (const [q, want] of [[ai.s + ' ' + ai.a, ai.s], [ai.s, ai.s], [ai.t, ai.s], [ai.t + ' ' + tr(ai.a), ai.s]]) {
+    const hit = await tryQ(q, want); if (hit) { hit.ai = true; return hit; }
+  }
+  if (!near.length && [...zt].length >= 4) await tryQ([...zt].slice(0, Math.ceil([...zt].length / 2)).join(''), '\u0000');   // start of the title: closest results only
+  const out = []; out.near = rank(near); return out;
 }
 
 
@@ -165,6 +191,11 @@ function resultRow(r, extra) {
   return '<button class="res" data-id="' + esc(r.id) + '"><span class="art">' + esc(simp((r.trackName || '?').trim().charAt(0))) + '</span><span class="rm"><div class="t">' + esc(simp(r.trackName)) + '</div>' + tpRow(r.trackName) + '<div class="a">' + esc(withPy(r.artistName)) + (r.albumName ? ' · ' + esc(r.albumName) : '') + (r.duration ? ' · ' + fmt(r.duration) : '') + '</div></span><span class="badges"><span class="badge">' + (extra || (synced ? (/<\d+:\d+/.test(r.syncedLyrics) ? 'Word synced' : 'Synced') : 'Lyrics only')) + '</span>' + [versionTag(r.trackName + ' ' + (r.albumName || '')), DUET_RX.test(r.syncedLyrics || r.plainLyrics || '') ? 'Duet' : ''].filter(Boolean).map(t => '<span class="badge">' + t + '</span>').join('') + '</span></button>';
 }
 function renderResults(list, q) {
+  if (!list.length && list.near && list.near.length) {
+    lastResults = list.near;
+    $('#results').innerHTML = '<p class="msg">No exact match for “' + esc(q) + '”.</p><div class="sec">Closest results</div>' + list.near.slice(0, 15).map(r => resultRow(r)).join('');
+    return;
+  }
   lastResults = list;
   $('#results').innerHTML = list.length ? '<div class="sec">Results for “' + esc(q) + '”</div>' + list.slice(0, 25).map(r => resultRow(r)).join('')
     : '<p class="msg">No lyrics found for “' + esc(q) + '”. Try the Chinese title, or the singer’s name only.</p>';
@@ -252,6 +283,11 @@ async function doSearch(q) {
   if (/^[a-z]{2,10}$/.test(ini)) return searchInitials(ini, q);
   try {
     let list = await searchQ(q);
+    if (!list.length) {
+      const my = searchSeq;
+      list = await findVariants(q.replace(/\s+/g, ' '), '', m => { if (my === searchSeq) $('#results').innerHTML = sugg + '<div class="seeking"><span class="spin"></span><div><b>No exact match yet</b><div class="muted">' + esc(m) + '</div></div></div>'; });
+      if (my !== searchSeq) return;
+    }
     // a short run of letters is probably pinyin initials: put Chinese titles first
     if (/^[a-z]{2,8}$/i.test(q.replace(/\s+/g, ''))) list = [...list.filter(r => [...(r.trackName || '')].some(isZh)), ...list.filter(r => ![...(r.trackName || '')].some(isZh))];
     renderResults(list, q); if (sugg) $('#results').insertAdjacentHTML('afterbegin', sugg); }
@@ -666,6 +702,18 @@ async function aiText(prompt, onWait, ok) {
   await new Promise(r => setTimeout(r, 16000));                    // Pollinations' free limit: wait and try once more
   return good(await pollinations(prompt, 'https://text.pollinations.ai/'));
 }
+// Shazam name (often English or romanised) → the song's Chinese title and singer.
+async function aiName(title, artist, onWait) {
+  const ck = 'ainame.' + title + '|' + artist, cached = store.get(ck, null); if (cached) return cached;
+  const prompt = 'Song: "' + title + '"' + (artist ? ' by "' + artist + '"' : '') + '. What is its original Chinese title and the singer\'s Chinese name? ' +
+    'Reply with exactly one line: Simplified Chinese title|Traditional Chinese title|Singer in Chinese. If you don\'t know this song, reply UNKNOWN. No other text.';
+  const t = await aiText(prompt, onWait, x => /UNKNOWN/i.test(x) || /\|/.test(x));
+  const p = t && !/UNKNOWN/i.test(t) ? t.split('\n').find(l => l.includes('|')).split('|').map(x => x.replace(/^[\s"“”]+|[\s"“”]+$/g, '')) : null;
+  const res = p && [...(p[0] || '')].some(isZh) ? { s: simp(p[0]), t: p[1] || p[0], a: p[2] || '' } : null;
+  log('ai name', title, artist, res);
+  if (res) store.set(ck, res);
+  return res;
+}
 // Pinyin initials → song titles. The AI suggests; every title is checked against the initials here, so wrong guesses never show.
 async function aiInitials(q, onWait) {
   const ck = 'aiini.' + q, cached = store.get(ck, null); if (cached) return cached;
@@ -760,11 +808,13 @@ async function fromShortcut() {
   $('#q').value = q || [title, artist].filter(Boolean).join(' '); syncClear();
   $('#results').innerHTML = '<p class="msg">Finding lyrics for “' + esc(title || q) + '”…</p>';
   try {
-    const list = q ? await searchQ(q) : await findByMeta(title, artist);
-    if (!list.length) { renderResults([], title || q); return true; }
+    const step = m => { $('#results').innerHTML = '<div class="seeking"><span class="spin"></span><div><b>Looking for “' + esc(title || q) + '”</b><div class="muted">' + esc(m) + '</div></div></div>'; };
+    let list = q ? await searchQ(q) : await findByMeta(title, artist, step);
+    if (q && !list.length) list = await findVariants(q, '', step);
+    if (!list.length) { renderResults(list, title || q); return true; }
     renderResults(list, title || q);
     openRecord(recFromLrclib(list[0]), list);
-    toast('Found ' + list[0].trackName);
+    toast((list.ai ? 'Closest match: ' : 'Found ') + list[0].trackName);
   } catch (e) { log('shortcut lookup failed', e); $('#results').innerHTML = '<p class="msg">Couldn’t reach the lyrics server. Check your connection, then search below.</p>'; }
   return true;
 }
