@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="app.css?v=0.7.2">
+<link rel="stylesheet" href="app.css?v=0.8.0">
 </head>
 <body>
 <div class="app">
@@ -29,7 +29,7 @@
         <button class="link" id="bHowListen">First time? Set up the Shortcut</button>
       </div>
       <form id="fSearch" class="searchbar" role="search">
-        <div class="qwrap"><input id="q" class="field" type="search" placeholder="Title or singer, 中文 or English" autocomplete="off" enterkeyhint="search"><button type="button" class="qclear" id="bClear" aria-label="Clear search" hidden><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+        <div class="qwrap"><input id="q" class="field" type="search" placeholder="Title, singer, or initials (nnmat)" autocomplete="off" enterkeyhint="search"><button type="button" class="qclear" id="bClear" aria-label="Clear search" hidden><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
         <button class="btn sm" type="submit">Search</button>
       </form>
       <div id="results" aria-live="polite"></div>
@@ -74,6 +74,7 @@
   <h3>Show</h3><div class="seg" id="segMode"><button data-v="m-both">汉字 + pinyin</button><button data-v="m-py">Pinyin only</button></div>
   <h3>Text size</h3><div class="row"><span>A</span><input type="range" id="size" min="24" max="60" step="2" aria-label="Text size"><span class="bigA">A</span><span class="sample" id="sizeV"></span></div>
   <div id="sungRow"><h3>This song is sung in</h3><div class="seg" id="segSung"><button data-v="cmn">Mandarin 普通话</button><button data-v="yue">Cantonese 粤语</button></div><p class="note">Cantonese shows jyutping (e.g. nei5 hou2: the number is the tone). Remembered for this song.</p></div>
+  <h3>Highlight</h3><div class="seg" id="segHl"><button data-v="sweep">Sweep across words</button><button data-v="line">Whole line</button></div><p class="note">Whole line lights up the line being sung at once, for songs whose word timing feels off.</p>
   <h3>Characters</h3><div class="seg" id="segScript"><button data-v="simp">Simplified 简体</button><button data-v="orig">As written</button></div>
   <h3>Theme</h3><div class="seg" id="segSkin"><button data-v="dark">Dark</button><button data-v="light">Light</button><button data-v="light dark">Auto</button></div>
   <div id="offRow"><h3>Sync offset for this song</h3><div class="row"><b id="offV">0.0 s</b><span class="muted">Saved per song</span><button class="link" id="bReset">Reset</button></div></div>
@@ -135,8 +136,9 @@
 <div class="pop" id="pop"><p>Reading for <b id="popH"></b></p><div class="chips" id="popC"></div></div>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="vendor/pinyin-pro.js?v=0.7.2"></script>
-<script src="vendor/t2s.js?v=0.7.2"></script>
-<script src="app.js?v=0.7.2"></script>
+<script src="vendor/pinyin-pro.js?v=0.8.0"></script>
+<script src="vendor/t2s.js?v=0.8.0"></script>
+<script src="vendor/catalog.js?v=0.8.0"></script>
+<script src="app.js?v=0.8.0"></script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.7.2';
+const VERSION = '0.8.0';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -34,7 +34,7 @@ let song = null;          // {key,title,artist,album,dur,timed,lines,alts}
 let mode = 'idle';        // idle | wait | run | tap
 let cur = -1, base = 0, t0 = 0, running = false, ended = false, follow = true, followT = 0, seeking = false;
 let lastResults = [], paused = false, yueOn = false;
-const prefs = { mode: store.get('mode', 'm-both') === 'm-py' ? 'm-py' : 'm-both', size: store.get('size2', Math.round(Math.min(60, Math.max(34, Math.min(innerWidth, 900) / 10)))), script: store.get('script', 'simp'), skin: store.get('skin', 'dark') };
+const prefs = { mode: store.get('mode', 'm-both') === 'm-py' ? 'm-py' : 'm-both', size: store.get('size2', Math.round(Math.min(60, Math.max(34, Math.min(innerWidth, 900) / 10)))), script: store.get('script', 'simp'), hl: store.get('hl', 'sweep'), skin: store.get('skin', 'dark') };
 
 /* ---------- LRC + pinyin ---------- */
 // Returns lines with optional per-character times (ct) from enhanced LRC word tags: [00:12.00]<00:12.00>你<00:12.40>好<00:13.00>
@@ -110,6 +110,7 @@ function pyText(t) {
   if (!P) return '';
   try { return P.pinyin(t, { toneType: 'symbol', toneSandhi: true, nonZh: 'consecutive' }).replace(/\s+/g, ' ').trim(); } catch (e) { return ''; }
 }
+const withPy = a => { const p = pyText(simp(a)); return simp(a) + (p ? ' (' + p + ')' : ''); };
 const tpRow = t => { const p = pyText(simp(t)); return p ? '<div class="tp">' + esc(p) + '</div>' : ''; };
 function readings(ch) {
   if (yueOn && window.ToJyutping) { try { return (window.ToJyutping.getJyutpingCandidates(ch)[0] || [ch, []])[1]; } catch (e) { return []; } }
@@ -161,7 +162,7 @@ function show(view) {
 }
 function resultRow(r, extra) {
   const synced = !!r.syncedLyrics;
-  return '<button class="res" data-id="' + esc(r.id) + '"><span class="art">' + esc(simp((r.trackName || '?').trim().charAt(0))) + '</span><span class="rm"><div class="t">' + esc(simp(r.trackName)) + '</div>' + tpRow(r.trackName) + '<div class="a">' + esc(simp(r.artistName)) + (r.albumName ? ' · ' + esc(r.albumName) : '') + (r.duration ? ' · ' + fmt(r.duration) : '') + '</div></span><span class="badges"><span class="badge">' + (extra || (synced ? (/<\d+:\d+/.test(r.syncedLyrics) ? 'Word synced' : 'Synced') : 'Lyrics only')) + '</span>' + [versionTag(r.trackName + ' ' + (r.albumName || '')), DUET_RX.test(r.syncedLyrics || r.plainLyrics || '') ? 'Duet' : ''].filter(Boolean).map(t => '<span class="badge">' + t + '</span>').join('') + '</span></button>';
+  return '<button class="res" data-id="' + esc(r.id) + '"><span class="art">' + esc(simp((r.trackName || '?').trim().charAt(0))) + '</span><span class="rm"><div class="t">' + esc(simp(r.trackName)) + '</div>' + tpRow(r.trackName) + '<div class="a">' + esc(withPy(r.artistName)) + (r.albumName ? ' · ' + esc(r.albumName) : '') + (r.duration ? ' · ' + fmt(r.duration) : '') + '</div></span><span class="badges"><span class="badge">' + (extra || (synced ? (/<\d+:\d+/.test(r.syncedLyrics) ? 'Word synced' : 'Synced') : 'Lyrics only')) + '</span>' + [versionTag(r.trackName + ' ' + (r.albumName || '')), DUET_RX.test(r.syncedLyrics || r.plainLyrics || '') ? 'Duet' : ''].filter(Boolean).map(t => '<span class="badge">' + t + '</span>').join('') + '</span></button>';
 }
 function renderResults(list, q) {
   lastResults = list;
@@ -170,15 +171,72 @@ function renderResults(list, q) {
 }
 function renderLists() {
   const fav = store.get('fav', []), hist = store.get('hist', []);
-  const row = s => '<button class="res" data-key="' + esc(s.key) + '"><span class="art">' + esc(simp((s.title || '?').charAt(0))) + '</span><span class="rm"><div class="t">' + esc(simp(s.title)) + '</div>' + tpRow(s.title) + '<div class="a">' + esc(simp(s.artist || '')) + '</div></span>' + (fav.some(f => f.key === s.key) ? '<span class="badge">★</span>' : '') + '</button>';
+  const row = s => '<button class="res" data-key="' + esc(s.key) + '"><span class="art">' + esc(simp((s.title || '?').charAt(0))) + '</span><span class="rm"><div class="t">' + esc(simp(s.title)) + '</div>' + tpRow(s.title) + '<div class="a">' + esc(withPy(s.artist || '')) + '</div></span>' + (fav.some(f => f.key === s.key) ? '<span class="badge">★</span>' : '') + '</button>';
   $('#lists').innerHTML = (fav.length ? '<div class="sec">Favourites</div>' + fav.map(row).join('') : '')
     + (hist.length ? '<div class="sec">Recent</div>' + hist.slice(0, 15).map(row).join('') : '');
 }
+/* ---------- local suggestions: popular KTV songs + your history, matched by pinyin initials or part of a title ---------- */
+let localIdx = null;
+function pyKeys(t) {
+  const P = PP(); t = simp(t || ''); if (!P) return { ini: '', full: '' };
+  try {
+    const arr = P.pinyin(t, { toneType: 'none', type: 'array', nonZh: 'consecutive' }).map(x => x.toLowerCase().replace(/[^a-z0-9ü]/g, '').replace(/ü/g, 'v')).filter(Boolean);
+    return { ini: arr.map(x => x[0]).join(''), full: arr.join('') };
+  } catch (e) { return { ini: '', full: '' }; }
+}
+function buildLocal() {
+  const seen = new Set(), out = [];
+  const add = (title, artist, extra) => { const k = simp(title) + '|' + simp(artist || ''); if (seen.has(k)) return; seen.add(k); const a = pyKeys(title), b = pyKeys(artist); out.push({ title: simp(title), artist: simp(artist || ''), tI: a.ini, tF: a.full, aI: b.ini, aF: b.full, ...extra }); };
+  for (const f of store.get('fav', [])) add(f.title, f.artist, { key: f.key });
+  for (const h of store.get('hist', [])) add(h.title, h.artist, { key: h.key });
+  for (const [t, a, y] of (window.KTV_CATALOG || [])) add(t, a, { yue: y === 'y' });
+  return out;
+}
+function matchLocal(q) {
+  localIdx ||= buildLocal();
+  const raw = q.trim(), lat = raw.toLowerCase().replace(/[\s'’-]+/g, '').replace(/ü/g, 'v');
+  const cjk = [...raw].some(isZh), sq = simp(raw).replace(/\s+/g, '');
+  const hits = [];
+  for (const e of localIdx) {
+    let score = 0;
+    if (cjk) {
+      const tt = e.title.replace(/\s+/g, ''), aa = e.artist.replace(/\s+/g, '');
+      if (tt === sq) score = 100; else if (tt.startsWith(sq)) score = 90; else if (tt.includes(sq)) score = 70;
+      else if (aa.includes(sq) || (tt + aa).includes(sq)) score = 50;
+    } else if (/^[a-z0-9v]+$/.test(lat)) {
+      if (e.tI === lat) score = 100; else if (e.tI.startsWith(lat) && lat.length >= 2) score = 85;
+      else if (e.tF.startsWith(lat) && lat.length >= 3) score = 80; else if ((e.tI + e.aI) === lat || (e.aI + e.tI) === lat) score = 75;
+      else if (e.aF.startsWith(lat) && lat.length >= 3) score = 55; else if (e.aI === lat && lat.length >= 2) score = 50;
+      else if (lat.length >= 3 && e.tI.includes(lat)) score = 40;
+    }
+    if (score) hits.push([score + (e.key ? 5 : 0), e]);
+  }
+  return hits.sort((a, b) => b[0] - a[0]).slice(0, 8).map(x => x[1]);
+}
+let lastSugg = [];
+function suggRow(e, i) {
+  return '<button class="res" data-sugg="' + i + '"><span class="art">' + esc(e.title.charAt(0)) + '</span><span class="rm"><div class="t">' + esc(e.title) + '</div>' + tpRow(e.title) + '<div class="a">' + esc(withPy(e.artist)) + '</div></span><span class="badges">' + (e.key ? '<span class="badge">Recent</span>' : '') + (e.yue ? '<span class="badge">Cantonese</span>' : '') + '</span></button>';
+}
+async function openFromMeta(e) {
+  if (e.key) { const rec = store.get('song.' + e.key, null); if (rec) return openRecord(rec); }
+  toast('Finding lyrics for ' + e.title + '…');
+  try {
+    const list = await findByMeta(e.title, e.artist.split(/\s+/)[0]);
+    if (!list.length) { toast('No lyrics found for ' + e.title); return; }
+    const rec = recFromLrclib(list[0]);
+    if (e.yue && store.get('yue.' + rec.key, null) == null) store.set('yue.' + rec.key, true);
+    return openRecord(rec, list);
+  } catch (err) { log('suggestion lookup failed', err); toast('Couldn’t reach the lyrics server'); }
+}
 async function doSearch(q) {
   q = q.trim(); if (!q) return;
-  $('#results').innerHTML = '<p class="msg">Searching…</p>';
-  try { renderResults(await searchQ(q), q); }
-  catch (e) { log('search error', e); $('#results').innerHTML = '<p class="msg">Couldn’t reach the lyrics server. Check your connection and try again.</p>'; }
+  lastSugg = matchLocal(q);
+  const sugg = lastSugg.length ? '<div class="sec">Suggestions</div>' + lastSugg.map(suggRow).join('') : '';
+  $('#results').innerHTML = sugg + '<p class="msg">Searching lyrics…</p>';
+  // pure initials like "nnmat" mean nothing to the lyrics server, so only suggestions are shown for those
+  if (lastSugg.length && /^[a-z]{2,8}$/i.test(q.replace(/\s+/g, ''))) { $('#results').innerHTML = sugg; return; }
+  try { const list = await searchQ(q); renderResults(list, q); if (sugg) $('#results').insertAdjacentHTML('afterbegin', sugg); }
+  catch (e) { log('search error', e); $('#results').innerHTML = sugg + '<p class="msg">Couldn’t reach the lyrics server. Check your connection and try again.</p>'; }
 }
 
 
@@ -230,6 +288,7 @@ const tagHtml = list => list.filter(Boolean).map(t => '<span class="tag">' + esc
 function keyOf(r) { return 'l' + r.id; }
 function cacheSong(rec) { store.set('song.' + rec.key, rec); }
 function rememberHistory(rec) {
+  localIdx = null;
   const h = store.get('hist', []).filter(x => x.key !== rec.key);
   h.unshift({ key: rec.key, title: rec.title, artist: rec.artist }); store.set('hist', h.slice(0, 40));
   const keep = new Set(h.slice(0, 40).map(x => x.key).concat(store.get('fav', []).map(x => x.key)));
@@ -263,7 +322,16 @@ function openRecord(rec, alts) {
   song.names = Object.fromEntries(Object.entries(names).map(([n, v]) => [v, n]));
   song.lines.forEach((l, i) => { const p = song.lines[i - 1]; l.turn = !!l.v && (!p || p.v !== l.v || p.credit); });
   log('voices', song.duet ? JSON.stringify(names) || 'markers' : 'none');
-  song.lines.forEach((l, i) => { const nx = song.lines[i + 1]; l.end = l.words ? Math.max(l.t + 0.3, l.u.at(-1).tm[1]) : (nx && nx.t - l.t < 8) ? nx.t - 0.15 : l.t + Math.min(5, 0.42 * l.u.length + 0.8); });
+  // How fast this song is sung: from lines sung back-to-back, seconds per syllable (30th percentile = the
+  // brisk lines). A line's sweep then lasts as long as its syllables need, not until the next line starts,
+  // so a quick line followed by a pause no longer crawls.
+  const per = song.lines.map((l, i) => { const nx = song.lines[i + 1], n = l.u.length; return (!l.credit && nx && n >= 4 && nx.t - l.t < 8) ? (nx.t - l.t) / n : null; }).filter(Boolean).sort((a, b) => a - b);
+  song.rate = Math.min(0.8, Math.max(0.18, per.length ? per[Math.floor(per.length * 0.3)] : 0.42));
+  song.lines.forEach((l, i) => {
+    const nx = song.lines[i + 1], gap = nx ? nx.t - l.t : 6;
+    l.end = l.words ? Math.max(l.t + 0.3, l.u.at(-1).tm[1]) : l.t + Math.max(0.6, Math.min(gap - 0.15, l.u.length * song.rate * 1.15 + 0.3, 7));
+  });
+  log('rate', song.rate.toFixed(2), 's/syllable');
   if (song.timed && !song.dur) song.dur = song.lines.at(-1).t + 10;
   setLine($('#sT'), esc(simp(song.title) || 'Lyrics'));
   const syncTag = !song.timed ? 'Lyrics only' : song.wordSync ? 'Word synced' : 'Synced';
@@ -296,6 +364,7 @@ function applyPrefs() {
   const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = prefs.skin === 'light' ? '#fbf6f1' : '#140d1c';
   $('#size').value = prefs.size; $('#sizeV').textContent = prefs.size;
   for (const b of document.querySelectorAll('#segMode button')) b.setAttribute('aria-pressed', b.dataset.v === prefs.mode);
+  for (const b of document.querySelectorAll('#segHl button')) b.setAttribute('aria-pressed', b.dataset.v === prefs.hl);
   for (const b of document.querySelectorAll('#segScript button')) b.setAttribute('aria-pressed', b.dataset.v === prefs.script);
   for (const b of document.querySelectorAll('#segSkin button')) b.setAttribute('aria-pressed', b.dataset.v === prefs.skin);
 }
@@ -340,7 +409,7 @@ function tick() {
       const f = Math.min(1, Math.max(0, (tt - l.t) / (l.end - l.t))), n = l.u.length;
       el.querySelectorAll('.u').forEach((s, k) => {
         const tm = l.words && l.u[k].tm;   // word-timed: follow the real rhythm (held notes, fast runs)
-        const p = tm ? (tt - tm[0]) / Math.max(0.05, tm[1] - tm[0]) : f * n - k;
+        const p = prefs.hl === 'line' ? 1 : tm ? (tt - tm[0]) / Math.max(0.05, tm[1] - tm[0]) : f * n - k;
         s.style.setProperty('--p', Math.min(1, Math.max(0, p)) * 100 + '%');
       });
     }
@@ -451,6 +520,7 @@ function reopenKeep() {
   const r = openRecord(rec, keep.alts);
   if (r && r.then) r.then(resume); else resume();
 }
+$('#segHl').onclick = e => { const b = e.target.closest('button'); if (!b) return; prefs.hl = b.dataset.v; store.set('hl', prefs.hl); applyPrefs(); };
 $('#segScript').onclick = e => { const b = e.target.closest('button'); if (!b || b.dataset.v === prefs.script) return; prefs.script = b.dataset.v; store.set('script', prefs.script); applyPrefs(); renderLists(); reopenKeep(); };
 $('#segSung').onclick = e => { const b = e.target.closest('button'); if (!b || !song) return; const on = b.dataset.v === 'yue'; if (on === !!song.yue) return; store.set('yue.' + song.key, on); closeAll(); toast(on ? 'Cantonese readings (jyutping)' : 'Mandarin readings (pinyin)'); reopenKeep(); };
 $('#size').oninput = e => { prefs.size = +e.target.value; store.set('size2', prefs.size); applyPrefs(); };
@@ -459,7 +529,7 @@ $('#bReset').onclick = () => { if (!song) return; store.set(offKey(), 0); $('#of
 $('#bFav').onclick = () => {
   if (!song) return; let f = store.get('fav', []); const on = !f.some(x => x.key === song.key);
   f = on ? [{ key: song.key, title: song.title, artist: song.artist }, ...f] : f.filter(x => x.key !== song.key);
-  store.set('fav', f); $('#bFav').classList.toggle('on', on); toast(on ? 'Saved to favourites' : 'Removed from favourites'); renderLists();
+  store.set('fav', f); localIdx = null; $('#bFav').classList.toggle('on', on); toast(on ? 'Saved to favourites' : 'Removed from favourites'); renderLists();
 };
 $('#bSong').onclick = () => {
   if (!song) return;
@@ -493,11 +563,16 @@ $('#bUse').onclick = () => {
 
 /* ---------- browse events ---------- */
 const syncClear = () => { $('#bClear').hidden = !$('#q').value; };
-$('#q').addEventListener('input', syncClear);
+$('#q').addEventListener('input', () => {
+  syncClear(); const q = $('#q').value.trim();
+  if (!q) { $('#results').innerHTML = ''; return; }
+  lastSugg = matchLocal(q);
+  $('#results').innerHTML = lastSugg.length ? '<div class="sec">Suggestions</div>' + lastSugg.map(suggRow).join('') : '';
+});
 $('#bClear').onclick = () => { $('#q').value = ''; syncClear(); $('#results').innerHTML = ''; lastResults = []; $('#q').focus(); };
 $('#bClearPaste').onclick = () => { $('#paste').value = ''; $('#paste').focus(); };
 $('#fSearch').onsubmit = e => { e.preventDefault(); $('#q').blur(); doSearch($('#q').value); };
-$('#results').onclick = e => { const b = e.target.closest('.res'); if (!b) return; const r = lastResults.find(x => String(x.id) === b.dataset.id); if (r) openRecord(recFromLrclib(r), lastResults.filter(x => x.trackName === r.trackName || x.artistName === r.artistName)); };
+$('#results').onclick = e => { const b = e.target.closest('.res'); if (!b) return; if (b.dataset.sugg != null) { openFromMeta(lastSugg[+b.dataset.sugg]); return; } const r = lastResults.find(x => String(x.id) === b.dataset.id); if (r) openRecord(recFromLrclib(r), lastResults.filter(x => x.trackName === r.trackName || x.artistName === r.artistName)); };
 $('#lists').onclick = e => { const b = e.target.closest('.res'); if (!b) return; const rec = store.get('song.' + b.dataset.key, null); if (rec) openRecord(rec); else toast('Not cached: search for it again'); };
 $('#bHome').onclick = () => show('browse');
 $('#nowbar').onclick = () => show('sing');
