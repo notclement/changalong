@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.3.0';
+const VERSION = '0.4.1';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -19,7 +19,7 @@ const PP = () => (window.pinyinPro && window.pinyinPro.pinyin) ? window.pinyinPr
 let song = null;          // {key,title,artist,album,dur,timed,lines,alts}
 let mode = 'idle';        // idle | wait | run | tap
 let cur = -1, base = 0, t0 = 0, running = false, ended = false, follow = true, followT = 0, seeking = false;
-let lastResults = [];
+let lastResults = [], paused = false;
 const prefs = { mode: store.get('mode', 'm-both') === 'm-py' ? 'm-py' : 'm-both', size: store.get('size2', 38), script: store.get('script', 'simp'), skin: store.get('skin', 'dark') };
 
 /* ---------- LRC + pinyin ---------- */
@@ -103,6 +103,32 @@ async function doSearch(q) {
   catch (e) { log('search error', e); $('#results').innerHTML = '<p class="msg">Couldn’t reach the lyrics server. Check your connection and try again.</p>'; }
 }
 
+
+/* ---------- duet voices: 男 / 女 / 合 markers ---------- */
+const VOICES = { m: { tag: '男', label: 'Him' }, f: { tag: '女', label: 'Her' }, b: { tag: '合', label: 'Both' } };
+const CREDIT = /^(作词|作曲|编曲|词|曲|制作人?|监制|演唱|原唱|混音|和声|录音|母带|出品|发行|吉他|贝斯|鼓|弦乐|配唱|统筹|OP|SP|ISRC|Lyrics?|Lyricist|Composer|Arranger|Producer|Written by|Music by)\s*[:：]/i;
+const voiceOf = w => {
+  w = w.trim().toLowerCase();
+  if (/^(合|合唱|男女|齐|一起|both|all|duet|d|together|m\s*[&+/]\s*f|f\s*[&+/]\s*m)$/.test(w)) return 'b';
+  if (/^(男|男声|男生|m|male|man|him|he)$/.test(w)) return 'm';
+  if (/^(女|女声|女生|f|female|woman|her|she)$/.test(w)) return 'f';
+  return null;
+};
+function splitVoice(text, names) {
+  // "(男) ..."  "【女】..."  "男：..."  "合 : ..."  "周杰伦：..."
+  let m = text.match(/^\s*[(（\[【]\s*([^)）\]】]{1,8})\s*[)）\]】]\s*[:：]?\s*/);
+  if (m && voiceOf(m[1])) return { v: voiceOf(m[1]), text: text.slice(m[0].length) };
+  m = text.match(/^\s*([^:：\s]{1,10}(?:\s[^:：\s]{1,10})?)\s*[:：]\s*/);
+  if (m) {
+    const v = voiceOf(m[1]); if (v) return { v, text: text.slice(m[0].length) };
+    if (m[0].length < text.length && !/\d/.test(m[1])) {             // a singer's name: 1st name = blue, 2nd = pink, more = green
+      if (!(m[1] in names)) { const n = Object.keys(names).length; names[m[1]] = n === 0 ? 'm' : n === 1 ? 'f' : 'b'; }
+      return { v: names[m[1]], name: m[1], text: text.slice(m[0].length) };
+    }
+  }
+  return null;
+}
+
 /* ---------- load a song ---------- */
 function keyOf(r) { return 'l' + r.id; }
 function cacheSong(rec) { store.set('song.' + rec.key, rec); }
@@ -121,10 +147,18 @@ function openRecord(rec, alts) {
   const parsed = parseLRC(simp(rec.lrc));
   const ov = store.get('ov.' + rec.key, {});
   song = { ...rec, timed: parsed.timed, alts: alts || null };
+  const names = {}; let voice = null;
   song.lines = parsed.lines.map((l, i) => {
-    const u = toUnits(l.text); u.forEach((x, j) => { const o = ov[i + ':' + j]; if (o) { x.p = o; x.fix = true; } });
-    return { t: l.t, text: l.text, u };
+    let text = l.text, credit = false;
+    if (CREDIT.test(text)) credit = true;
+    else { const sv = splitVoice(text, names); if (sv) { voice = sv.v; text = sv.text; if (sv.name) VOICES[sv.v].name = sv.name; } }
+    const u = credit ? [] : toUnits(text); u.forEach((x, j) => { const o = ov[i + ':' + j]; if (o) { x.p = o; x.fix = true; } });
+    return { t: l.t, text, u, credit, v: credit ? null : voice };
   });
+  song.duet = song.lines.some(l => l.v);
+  song.names = Object.fromEntries(Object.entries(names).map(([n, v]) => [v, n]));
+  song.lines.forEach((l, i) => { const p = song.lines[i - 1]; l.turn = !!l.v && (!p || p.v !== l.v || p.credit); });
+  log('voices', song.duet ? JSON.stringify(names) || 'markers' : 'none');
   song.lines.forEach((l, i) => { const nx = song.lines[i + 1]; l.end = (nx && nx.t - l.t < 8) ? nx.t - 0.15 : l.t + Math.min(5, 0.42 * l.u.length + 0.8); });
   if (song.timed && !song.dur) song.dur = song.lines.at(-1).t + 10;
   $('#sT').textContent = simp(song.title) || 'Lyrics';
@@ -143,7 +177,8 @@ function openRecord(rec, alts) {
 
 /* ---------- stage ---------- */
 function renderStage() {
-  $('#stage').innerHTML = song.lines.map((l, i) => '<div class="ln" data-i="' + i + '">' + l.u.map((u, j) =>
+  const tag = l => { if (!l.turn) return ''; const n = song.names && song.names[l.v]; return '<span class="vt">' + esc(VOICES[l.v].tag) + ' ' + esc(n || VOICES[l.v].label) + '</span>'; };
+  $('#stage').innerHTML = song.lines.map((l, i) => l.credit ? '<div class="ln credit" data-i="' + i + '">' + esc(l.text) + '</div>' : '<div class="ln' + (l.v ? ' v-' + l.v : '') + '" data-i="' + i + '">' + tag(l) + l.u.map((u, j) =>
     '<span class="u' + (u.zh ? '' : ' x') + (u.fix ? ' fix' : '') + '" data-j="' + j + '"><b>' + esc(u.p) + '</b>' + (u.zh ? '<i>' + esc(u.h) + '</i>' : '') + '</span>').join('') + '</div>').join('');
   applyPrefs();
 }
@@ -160,12 +195,13 @@ function applyPrefs() {
 function go(i) {
   for (const el of $('#stage').children) {
     const k = +el.dataset.i;
-    el.className = 'ln' + (k === i ? ' now' : k === i + 1 ? ' next' : k < i ? ' past' : '');
-    if (k !== i) for (const s of el.children) s.style.removeProperty('--p');
+    const L = song.lines[k];
+    el.className = 'ln' + (L.credit ? ' credit' : '') + (L.v ? ' v-' + L.v : '') + (k === i ? ' now' : k === i + 1 ? ' next' : k < i ? ' past' : '');
+    if (k !== i) for (const s of el.querySelectorAll('.u')) s.style.removeProperty('--p');
   }
   cur = i; if (follow) scrollToLine(i);
 }
-function fillLine(i) { const el = $('#stage').children[i]; if (el) for (const s of el.children) s.style.setProperty('--p', '100%'); }
+function fillLine(i) { const el = $('#stage').children[i]; if (el) for (const s of el.querySelectorAll('.u')) s.style.setProperty('--p', '100%'); }
 function scrollToLine(i, instant) {
   const el = $('#stage').children[i]; if (!el) return; const st = $('#stage');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -179,7 +215,7 @@ function banner(what) {
 }
 const now = () => running ? base + (performance.now() - t0) / 1000 : base;
 function setTime(t) { base = t; t0 = performance.now(); }
-function startAt(t) { setTime(t); running = true; ended = false; mode = 'run'; banner(''); applyPrefs(); follow = true; $('#bBack').classList.remove('show'); }
+function startAt(t) { setTime(t); running = true; setPaused(false); ended = false; mode = 'run'; banner(''); applyPrefs(); follow = true; $('#bBack').classList.remove('show'); }
 const offKey = () => 'off.' + song.key;
 const offset = () => song ? store.get(offKey(), 0) : 0;
 
@@ -194,16 +230,35 @@ function tick() {
     const l = song.lines[i], el = $('#stage').children[i];
     if (l && el) {
       const f = Math.min(1, Math.max(0, (tt - l.t) / (l.end - l.t))), n = l.u.length;
-      [...el.children].forEach((s, k) => s.style.setProperty('--p', Math.min(1, Math.max(0, f * n - k)) * 100 + '%'));
+      el.querySelectorAll('.u').forEach((s, k) => s.style.setProperty('--p', Math.min(1, Math.max(0, f * n - k)) * 100 + '%'));
     }
     const nx = song.lines[i + 1];
-    if (!ended) { if (nx && (i < 0 || tt > l.end) && nx.t - tt > 2.5) banner((i < 0 ? 'Intro' : 'Instrumental') + ' · next line in <b>' + Math.ceil(nx.t - tt) + 's</b>'); else banner(''); }
+    if (!ended) {
+      const nv = nx && nx.v, turnSoon = nv && (!l || l.v !== nv) && nx.t - tt <= 5;
+      const who = nv ? '<b class="c-' + nv + '">' + esc(VOICES[nv].tag + ' ' + ((song.names && song.names[nv]) || VOICES[nv].label)) + '</b>' : '';
+      if (paused) banner('Paused · tap <b>▶</b> to carry on');
+      else if (nx && (i < 0 || tt > l.end) && nx.t - tt > 2.5) banner((i < 0 ? 'Intro' : 'Instrumental') + ' · ' + (who ? who + ' in ' : 'next line in ') + '<b>' + Math.ceil(nx.t - tt) + 's</b>');
+      else if (turnSoon) banner(who + ' next' + (nx.t - tt > 1 ? ' · <b>' + Math.ceil(nx.t - tt) + 's</b>' : ''));
+      else banner('');
+    }
     $('#tNow').textContent = fmt(t); if (!seeking) $('#seek').value = song.dur ? t / song.dur * 1000 : 0;
   }
   if (!follow && performance.now() > followT) { follow = true; $('#bBack').classList.remove('show'); if (cur >= 0) scrollToLine(cur); }
   requestAnimationFrame(tick);
 }
 let toastT; function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1800); }
+
+/* ---------- pause ---------- */
+function setPaused(p) {
+  paused = p; const b = $('#bPause'); if (!b) return;
+  b.classList.toggle('on', p); b.setAttribute('aria-label', p ? 'Carry on' : 'Pause');
+  b.innerHTML = p ? '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>' : '<svg viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></svg>';
+}
+$('#bPause').onclick = () => {
+  if (!song || !song.timed || mode !== 'run' || ended) return;
+  if (!paused) { base = now(); running = false; setPaused(true); lastBanner = null; log('paused at', base.toFixed(1)); }
+  else { t0 = performance.now(); running = true; setPaused(false); lastBanner = null; log('resumed at', base.toFixed(1)); }
+};
 
 /* ---------- sync controls ---------- */
 // Offset is stored per song and added to the clock when finding lines; nudge changes it.
@@ -342,6 +397,7 @@ async function fromShortcut() {
 }
 
 /* ---------- boot ---------- */
+$('.stage-wrap').addEventListener('scroll', e => { e.currentTarget.scrollTop = 0; });
 applyPrefs(); renderLists(); show('browse'); requestAnimationFrame(tick);
 fromShortcut();
 if (!PP()) toast('Pinyin engine failed to load');
