@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.8.4';
+const VERSION = '0.8.5';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -304,6 +304,10 @@ function openRecord(rec, alts) {
   const ov = store.get(ovKeyFor(rec.key), {});
   song = { ...rec, lang, yue: yueOn, toSimp: converted !== rec.lrc, timed: parsed.timed, alts: alts || null };
   const names = {}; let voice = null; const bare = bareMarkers(parsed.lines);
+  // per-line timing fixes the user made for this song ("Only this line")
+  const lf = store.get('lf.' + rec.key, {});
+  for (const [k, v] of Object.entries(lf)) if (parsed.lines[k]) parsed.lines[k].t = v;
+  song.lineFixes = Object.keys(lf).length;
   song.lines = parsed.lines.map((l, i) => {
     let text = l.text, credit = false, ct = l.ct;
     if (CREDIT.test(text)) credit = true;
@@ -466,7 +470,24 @@ $('#bAhead').onclick = () => nudge(-0.5);
 function syncToLine(i) {
   const l = song.lines[i]; if (!l) return;
   if (!song.timed) { go(i); fillLine(i); return; }
-  startAt(l.t - offset() + 0.25); go(i); toast('Synced to line ' + (i + 1)); log('sync to line', i, l.t);
+  const wasRun = mode === 'run' && running, before = now(), tapTT = before + offset();
+  startAt(l.t - offset() + 0.25); go(i); log('sync to line', i, l.t, 'was off by', (tapTT - l.t).toFixed(2));
+  // A big jump while already in time usually means just this one line is timed wrong in the lyrics file.
+  // Offer to fix only that line (saved for this song) instead of shifting the whole song.
+  if (wasRun && Math.abs(tapTT - l.t) >= 0.6) offerLineFix(i, tapTT - 0.25, before);
+  else toast('Synced to line ' + (i + 1));
+}
+let actT = null;
+function offerLineFix(i, newT, before) {
+  const a = $('#act'), t0tap = performance.now();
+  a.innerHTML = '<span>Synced the whole song.</span><button class="link" id="bOnly">Only this line</button>';
+  a.classList.add('show'); clearTimeout(actT); actT = setTimeout(() => a.classList.remove('show'), 6000);
+  $('#bOnly').onclick = () => {
+    clearTimeout(actT); a.classList.remove('show');
+    setTime(before + (performance.now() - t0tap) / 1000);           // put the song clock back where it was
+    const lf = store.get('lf.' + song.key, {}); lf[i] = Math.round(newT * 100) / 100; store.set('lf.' + song.key, lf);
+    log('line fix', i, lf[i]); reopenKeep(); toast('Line ' + (i + 1) + ' timing fixed for this song');
+  };
 }
 $('#bTap').onclick = () => {
   if (!song) return;
@@ -538,7 +559,7 @@ $('#segScript').onclick = e => { const b = e.target.closest('button'); if (!b ||
 $('#segSung').onclick = e => { const b = e.target.closest('button'); if (!b || !song) return; const on = b.dataset.v === 'yue'; if (on === !!song.yue) return; store.set('yue.' + song.key, on); closeAll(); toast(on ? 'Cantonese readings (jyutping)' : 'Mandarin readings (pinyin)'); reopenKeep(); };
 $('#size').oninput = e => { prefs.size = +e.target.value; store.set('size2', prefs.size); applyPrefs(); };
 $('#size').onchange = () => { if (cur >= 0) scrollToLine(cur, true); };
-$('#bReset').onclick = () => { if (!song) return; store.set(offKey(), 0); $('#offV').textContent = '0.0 s'; toast('Offset reset'); };
+$('#bReset').onclick = () => { if (!song) return; store.set(offKey(), 0); const hadFix = song.lineFixes; store.set('lf.' + song.key, {}); $('#offV').textContent = '0.0 s'; toast('Timing reset for this song'); if (hadFix) reopenKeep(); };
 $('#bFav').onclick = () => {
   if (!song) return; let f = store.get('fav', []); const on = !f.some(x => x.key === song.key);
   f = on ? [{ key: song.key, title: song.title, artist: song.artist }, ...f] : f.filter(x => x.key !== song.key);
