@@ -62,3 +62,60 @@ Add songs to `vendor/catalog.js` as `['Title', 'Singer']`, or `['Title', 'Singer
 ## Notes
 
 Tested on iPhone 17 Pro Max only. Found a problem or have an idea? [Open an issue](https://github.com/notclement/changalong/issues).
+
+Made by [Clement](https://www.linkedin.com/in/clementsg).
+
+## Changelog
+
+**1.1.0**
+- Lyrics not found? Retries with the Chinese-only title, Traditional/Simplified spellings, AI-suggested titles and other singers' versions, then shows closest results
+- Version number and author in Settings
+- Bigger mic button and text-size slider; tap the small/big A to step the size
+- Header and dock alignment fixes; no double-tap zoom
+- Settings ordered by use, Highlight first
+- Removed: favourites, tap-to-start prompt
+- Gemini key is checked before saving
+- Mandarin songs listed before Cantonese
+- Built-in song list checked for correct singers, ~1,300 songs
+
+**1.0.0**
+- Backup AIs (Gemini with your own key, Puter) for song summaries and initials search
+- Built-in list of ~1,260 popular KTV songs
+- Removed paste lyrics
+
+**0.9**
+- Song info: AI write-up of what the song is about, plus translate
+- Search any Chinese song by pinyin initials (e.g. `nnmat`), with AI help
+- Current line sits higher on screen; songs open at the first line
+- Swipe down to close sheets
+
+**0.8**
+- Search by pinyin initials and part of a title
+- Smarter line timing; 3-2-1 dots before lines after a pause; "next line in Ns"
+- Offline support restored
+
+**0.7**
+- Cantonese mode with jyutping
+- Layout for all phones, landscape and tablets
+
+**0.6**
+- English and other languages shown as plain text
+
+**0.5**
+- Word-level timing, sync tags (Word synced / Synced / Lyrics only) and a tag guide
+- Long titles scroll so you can read them
+
+**0.4**
+- Duets colour-coded: him blue, her pink, both green
+- Pause button
+
+**0.3**
+- Pinyin for song titles and singers
+- Traditional converted to Simplified; larger characters
+
+**0.2**
+- Pinyin under every character
+- Shortcut setup with a copyable AI prompt
+
+**0.1**
+- First release: Listen via Shazam Shortcut, lyrics from LRCLIB, pinyin, line sync

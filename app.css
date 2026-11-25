@@ -212,3 +212,5 @@ html,body,button,a,input,.seg,#stage{touch-action:manipulation}
 .sizer input[type=range]::-moz-range-track{height:10px;border-radius:6px;background:var(--sf2)}
 .sizer input[type=range]::-moz-range-progress{height:10px;border-radius:6px;background:var(--hl)}
 .sizer input[type=range]::-moz-range-thumb{width:34px;height:34px;border:0;border-radius:50%;background:#fff}
+
+.about-app{margin:22px 0 4px;text-align:center;font-size:13px;color:var(--dim)}.about-app a{color:var(--hl);text-decoration:none}

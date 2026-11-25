@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '1.0.9';
+const VERSION = '1.1.0';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -631,6 +631,7 @@ function reopenKeep() {
   const r = openRecord(rec, keep.alts);
   if (r && r.then) r.then(resume); else resume();
 }
+$('#appVer').textContent = 'v' + VERSION;
 $('#segHl').onclick = e => { const b = e.target.closest('button'); if (!b) return; prefs.hl = b.dataset.v; store.set('hl', prefs.hl); applyPrefs(); };
 $('#segScript').onclick = e => { const b = e.target.closest('button'); if (!b || b.dataset.v === prefs.script) return; prefs.script = b.dataset.v; store.set('script', prefs.script); applyPrefs(); renderLists(); reopenKeep(); };
 $('#segSung').onclick = e => { const b = e.target.closest('button'); if (!b || !song) return; const on = b.dataset.v === 'yue'; if (on === !!song.yue) return; store.set('yue.' + song.key, on); closeAll(); toast(on ? 'Cantonese readings (jyutping)' : 'Mandarin readings (pinyin)'); reopenKeep(); };
