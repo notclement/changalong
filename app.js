@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.8.2';
+const VERSION = '0.8.3';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -424,7 +424,7 @@ function tick() {
       const nv = nx && nx.v, turnSoon = nv && (!l || l.v !== nv) && nx.t - tt <= 5;
       const who = nv ? '<b class="c-' + nv + '">' + esc(VOICES[nv].tag + ' ' + ((song.names && song.names[nv]) || VOICES[nv].label)) + '</b>' : '';
       if (paused) banner('Paused · tap <b>▶</b> to carry on');
-      else if (nx && (i < 0 || tt > l.end) && nx.t - tt > 2.5) banner((i < 0 ? 'Intro' : 'Instrumental') + ' · ' + (who ? who + ' in ' : 'next line in ') + '<b>' + Math.ceil(nx.t - tt) + 's</b>');
+      else if (nx && (i < 0 || tt > l.end) && nx.t - tt > 0.3) banner((i < 0 ? 'Intro' : 'Instrumental') + ' · ' + (who ? who + ' in ' : 'next line in ') + '<b>' + Math.ceil(nx.t - tt) + 's</b>');
       else if (turnSoon) banner(who + ' next' + (nx.t - tt > 1 ? ' · <b>' + Math.ceil(nx.t - tt) + 's</b>' : ''));
       else banner('');
     }

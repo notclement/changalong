@@ -109,6 +109,7 @@ textarea.field{min-height:160px;font:15px/1.5 var(--han);resize:vertical;backgro
 .m-py .now .u b{background:linear-gradient(90deg,var(--vc,var(--hl)) var(--p,0%),var(--ink) var(--p,0%));-webkit-background-clip:text;background-clip:text}
 .banner{position:absolute;left:12px;right:12px;top:6px;text-align:center;font-size:15px;color:var(--ink);z-index:2;pointer-events:none;min-height:22px}
 .banner b{color:var(--ink)}
+.banner:not(:empty):not(.cta){left:50%;right:auto;transform:translateX(-50%);width:max-content;max-width:calc(100% - 24px);background:var(--sf);border:1px solid var(--faint);border-radius:99px;padding:6px 14px;box-shadow:0 6px 18px #0004;font-variant-numeric:tabular-nums}
 .banner.cta{pointer-events:auto;background:var(--sf);border:1px solid var(--faint);border-radius:16px;padding:12px 14px;color:var(--ink);box-shadow:0 8px 24px #0004}
 .banner.cta .link{min-height:36px}
 .back{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:var(--sf);color:var(--ink);border:1px solid var(--faint);padding:10px 16px;border-radius:99px;font-size:14px;display:none;min-height:44px;box-shadow:0 6px 20px #0004;white-space:nowrap}
