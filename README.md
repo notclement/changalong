@@ -23,10 +23,15 @@ Sing Chinese songs at karaoke without reading Chinese. Lyrics show pinyin under 
 
 Listen uses the iPhone's built-in Shazam through a Shortcut.
 
+**Easiest:** [Get the shortcut](https://www.icloud.com/shortcuts/d2e2fa551e4b414f8edf7d8d2bc5f65e) → **Add Shortcut**. Done.
+
+Or build it yourself:
+
 1. Open the app in your browser (Safari or Chrome) and tap **First time? Set up the Shortcut → Copy prompt** (or copy it below).
 2. Open the **Shortcuts** app and create a new shortcut with its AI builder, then paste the prompt.
 3. Check the shortcut is named exactly **ChangAlong**.
-4. Optional: Settings → Accessibility → Touch → **Back Tap** → Double Tap → ChangAlong.
+
+Optional: Settings → Accessibility → Touch → **Back Tap** → Double Tap → ChangAlong.
 
 ```text
 Create a shortcut named "ChangAlong" that does this:
@@ -66,6 +71,9 @@ Tested on iPhone 17 Pro Max only, in Safari and Chrome. Listen opens songs in yo
 Made by [Clement](https://www.linkedin.com/in/clementsg).
 
 ## Changelog
+
+**1.1.9**
+- One-tap **Get the shortcut** link (iCloud) in Shortcut setup and the README
 
 **1.1.8**
 - Shortcut opens songs in your default browser (Safari or Chrome)

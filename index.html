@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="app.css?v=1.1.8">
+<link rel="stylesheet" href="app.css?v=1.1.9">
 </head>
 <body>
 <div class="app">
@@ -93,7 +93,9 @@
 
 <section class="sheet" id="shHow" aria-label="Shortcut setup"><div class="grab"></div><h2>Set up “Listen” (once)</h2>
   <p class="note">iPhone's built-in Shazam does the listening. A Shortcut named <b>ChangAlong</b> passes the song to this page, in your default browser (Safari or Chrome).</p>
-  <h3>Quick way: let AI build it</h3>
+  <a class="btn" id="aGetSc" href="https://www.icloud.com/shortcuts/d2e2fa551e4b414f8edf7d8d2bc5f65e" target="_blank" rel="noopener" style="margin-top:12px">Get the shortcut</a>
+  <p class="note">Opens Apple's Add Shortcut screen: tap <b>Add Shortcut</b> and you're done. The first time it runs, allow Shazam and allow it to open this page.</p>
+  <h3>Or let AI build it</h3>
   <p class="note">Copy this prompt and paste it into the AI shortcut builder in the Shortcuts app (or any assistant that can create shortcuts).</p>
   <code class="prompt" id="aiPrompt"></code>
   <button class="btn" id="bCopyPrompt" style="margin-top:10px">Copy prompt</button>
@@ -138,11 +140,11 @@
 <div class="pop" id="pop"><p>Reading for <b id="popH"></b></p><div class="chips" id="popC"></div></div>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="vendor/pinyin-pro.js?v=1.1.8"></script>
-<script src="vendor/t2s.js?v=1.1.8"></script>
-<script src="vendor/s2t.js?v=1.1.8"></script>
-<script src="vendor/ko-rom.js?v=1.1.8"></script>
-<script src="vendor/catalog.js?v=1.1.8"></script>
-<script src="app.js?v=1.1.8"></script>
+<script src="vendor/pinyin-pro.js?v=1.1.9"></script>
+<script src="vendor/t2s.js?v=1.1.9"></script>
+<script src="vendor/s2t.js?v=1.1.9"></script>
+<script src="vendor/ko-rom.js?v=1.1.9"></script>
+<script src="vendor/catalog.js?v=1.1.9"></script>
+<script src="app.js?v=1.1.9"></script>
 </body>
 </html>
