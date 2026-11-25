@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.7.0';
+const VERSION = '0.7.1';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -492,6 +492,10 @@ $('#bUse').onclick = () => {
 };
 
 /* ---------- browse events ---------- */
+const syncClear = () => { $('#bClear').hidden = !$('#q').value; };
+$('#q').addEventListener('input', syncClear);
+$('#bClear').onclick = () => { $('#q').value = ''; syncClear(); $('#results').innerHTML = ''; lastResults = []; $('#q').focus(); };
+$('#bClearPaste').onclick = () => { $('#paste').value = ''; $('#paste').focus(); };
 $('#fSearch').onsubmit = e => { e.preventDefault(); $('#q').blur(); doSearch($('#q').value); };
 $('#results').onclick = e => { const b = e.target.closest('.res'); if (!b) return; const r = lastResults.find(x => String(x.id) === b.dataset.id); if (r) openRecord(recFromLrclib(r), lastResults.filter(x => x.trackName === r.trackName || x.artistName === r.artistName)); };
 $('#lists').onclick = e => { const b = e.target.closest('.res'); if (!b) return; const rec = store.get('song.' + b.dataset.key, null); if (rec) openRecord(rec); else toast('Not cached: search for it again'); };
@@ -505,7 +509,7 @@ async function fromShortcut() {
   if (!title && !q) return false;
   history.replaceState(null, '', location.pathname);
   log('from shortcut', title, artist, q);
-  $('#q').value = q || [title, artist].filter(Boolean).join(' ');
+  $('#q').value = q || [title, artist].filter(Boolean).join(' '); syncClear();
   $('#results').innerHTML = '<p class="msg">Finding lyrics for “' + esc(title || q) + '”…</p>';
   try {
     const list = q ? await searchQ(q) : await findByMeta(title, artist);

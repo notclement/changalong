@@ -33,6 +33,11 @@ textarea.field{min-height:160px;font:15px/1.5 var(--han);resize:vertical;backgro
 .big:active{transform:scale(.97)}
 .hero-s{color:var(--dim);margin:8px 0 0;max-width:30ch}
 .searchbar{display:flex;gap:8px;margin:8px 0 6px}
+.qwrap{position:relative;flex:1}
+.qwrap .field{padding-right:46px}
+.qwrap input::-webkit-search-cancel-button{display:none}
+.qclear{position:absolute;right:2px;top:50%;transform:translateY(-50%);width:44px;height:44px;display:grid;place-items:center;color:var(--dim)}
+.qclear svg{width:16px;height:16px;padding:3px;box-sizing:content-box;border-radius:50%;background:var(--sf2);stroke-width:2.5}
 .sec{font-size:13px;color:var(--dim);font-weight:600;margin:20px 0 4px}
 .res{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:10px 2px;border-bottom:1px solid var(--sf2);min-height:60px}
 .res .art{width:44px;height:44px;border-radius:10px;flex:none;display:grid;place-items:center;font:700 18px var(--han);color:#fff;background:linear-gradient(135deg,var(--hl),#7a2a6b)}

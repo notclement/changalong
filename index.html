@@ -29,7 +29,7 @@
         <button class="link" id="bHowListen">First time? Set up the Shortcut</button>
       </div>
       <form id="fSearch" class="searchbar" role="search">
-        <input id="q" class="field" type="search" placeholder="Title or singer, 中文 or English" autocomplete="off" enterkeyhint="search">
+        <div class="qwrap"><input id="q" class="field" type="search" placeholder="Title or singer, 中文 or English" autocomplete="off" enterkeyhint="search"><button type="button" class="qclear" id="bClear" aria-label="Clear search" hidden><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
         <button class="btn sm" type="submit">Search</button>
       </form>
       <div id="results" aria-live="polite"></div>
@@ -85,6 +85,7 @@
 
 <section class="sheet" id="shPaste" aria-label="Paste lyrics"><div class="grab"></div><h2>Paste lyrics</h2>
   <textarea class="field" id="paste" placeholder="[00:12.30]你好世界&#10;[00:16.80]我想和你一起看日落&#10;&#10;Plain lines work too: you tap to move on."></textarea>
+  <button class="link" id="bClearPaste" style="padding-left:0">Clear</button>
   <div class="two"><button class="btn ghost" id="bSample">Try example</button><button class="btn" id="bUse">Use these lyrics</button></div>
 </section>
 
