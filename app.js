@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '1.0.0';
+const VERSION = '1.0.1';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -204,7 +204,7 @@ function matchLocal(q) {
     else if (e.tI && /^[a-z0-9]+$/.test(lat)) {                                                                                   // first letters of the title's pinyin
       if (e.tI === lat) score = 100; else if (lat.length >= 2 && e.tI.startsWith(lat)) score = 85; else if (lat.length >= 3 && e.tI.includes(lat)) score = 40;
     }
-    if (score) hits.push([score + (e.key ? 5 : 0) + (!cjk && [...e.title].some(isZh) ? 20 : 0), e]);  // initials: Chinese songs first
+    if (score) hits.push([score + (e.key ? 5 : 0) + (!cjk && [...e.title].some(isZh) ? 20 : 0) + (e.yue ? 0 : 12), e]);  // initials: Chinese songs first, Mandarin before Cantonese
   }
   return hits.sort((a, b) => b[0] - a[0]).slice(0, 8).map(x => x[1]);
 }
@@ -236,7 +236,7 @@ async function searchInitials(ini, q) {
   if (my !== searchSeq) return;                                   // a newer search replaced this one
   const known = new Set(local.map(e => e.title + '|' + e.artist));
   const extra = (ai || []).filter(e => !known.has(e.title + '|' + e.artist));
-  lastSugg = local.concat(extra);
+  lastSugg = local.concat(extra.filter(e => !e.yue), extra.filter(e => e.yue));   // Mandarin first
   if (!lastSugg.length) {
     $('#results').innerHTML = '<p class="msg">' + (ai == null ? 'Couldn’t reach the AI right now. Try again in a moment, or type the title in Chinese.' : 'No songs found for “' + esc(q) + '”. Try typing the title in Chinese.') + '</p>';
     return;
@@ -593,7 +593,21 @@ $('#segSung').onclick = e => { const b = e.target.closest('button'); if (!b || !
 $('#size').oninput = e => { prefs.size = +e.target.value; store.set('size2', prefs.size); applyPrefs(); };
 $('#size').onchange = () => { if (cur >= 0) scrollToLine(cur, true); };
 $('#gemKey').value = store.get('gemkey', '');
-$('#bGemSave').onclick = () => { const v = $('#gemKey').value.trim(); store.set('gemkey', v); toast(v ? 'Gemini key saved on this phone' : 'Gemini key removed'); };
+function gemStatus(ok, msg) { const el = $('#gemStat'); el.className = 'gemstat ' + (ok === true ? 'ok' : ok === false ? 'bad' : ''); el.textContent = msg; }
+if (store.get('gemkey', '')) gemStatus(true, '✓ Key saved and verified');
+$('#gemKey').oninput = () => gemStatus(null, '');
+$('#bGemSave').onclick = async () => {
+  const v = $('#gemKey').value.trim(), b = $('#bGemSave');
+  if (!v) { store.set('gemkey', ''); gemStatus(null, ''); toast('Gemini key removed'); return; }
+  b.disabled = true; b.textContent = 'Checking…'; gemStatus(null, 'Checking the key with Google…');
+  const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 10000);
+  try {
+    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1&key=' + encodeURIComponent(v), { signal: ctl.signal });
+    if (r.ok) { store.set('gemkey', v); gemStatus(true, '✓ Key works, saved on this phone'); }
+    else { const j = await r.json().catch(() => ({})); log('gemini verify', r.status, JSON.stringify(j).slice(0, 120)); gemStatus(false, r.status === 429 ? '✗ Key is valid but over its limit right now, try later' : '✗ Google didn’t accept this key, check you copied all of it'); if (r.status === 429) store.set('gemkey', v); }
+  } catch (e) { gemStatus(false, '✗ Couldn’t reach Google to check, try again when online'); }
+  finally { clearTimeout(to); b.disabled = false; b.textContent = 'Verify & save'; }
+};
 $('#bReset').onclick = () => { if (!song) return; store.set(offKey(), 0); $('#offV').textContent = '0.0 s'; toast('Offset reset'); };
 $('#bFav').onclick = () => {
   if (!song) return; let f = store.get('fav', []); const on = !f.some(x => x.key === song.key);

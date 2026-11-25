@@ -194,3 +194,5 @@ a.btn{display:grid;place-items:center;text-align:center;font-size:15px}
   .banner{max-width:var(--col);margin:0 auto}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.gemstat{margin:6px 2px 0;font-size:13px;min-height:1em;color:var(--dim)}.gemstat.ok{color:#2fb36b}.gemstat.bad{color:#e5484d}
