@@ -8,8 +8,9 @@ Sing Chinese songs at karaoke without reading characters. Shows lyrics in Hanyu 
 
 1. **Listen** runs an iOS Shortcut that uses the iPhone's built-in Shazam (Recognize Music), then opens this page with `?title=…&artist=…`.
 2. The page looks up synced lyrics on [LRCLIB](https://lrclib.net) (free, no key).
-3. [pinyin-pro](https://github.com/zh-lx/pinyin-pro) converts them to pinyin on the device, with polyphone handling and 一/不 tone sandhi.
-4. Tap the line being sung to start the clock; nudge with **Behind / Ahead** (saved per song).
+3. Traditional characters are converted to Simplified (OpenCC dictionaries; switch off in Settings).
+4. [pinyin-pro](https://github.com/zh-lx/pinyin-pro) converts them to pinyin on the device, with polyphone handling and 一/不 tone sandhi.
+5. Tap the line being sung to start the clock; nudge with **Behind / Ahead** (saved per song).
 
 Everything runs in the browser. No account, no backend, no audio leaves the phone except what Shazam itself uses.
 
@@ -37,12 +38,13 @@ By hand: Recognize Music → URL Encode (Shazam Media → Title) → Text `https
 | Lyrics behind / ahead | Behind (+0.5 s) / Ahead (−0.5 s), remembered per song |
 | Fix a wrong reading (多音字) | Press and hold the syllable, pick the reading |
 | Other versions (live, remaster) | Tap the song title |
-| Display | Settings: 汉字 + pinyin (pinyin under each character) or Pinyin only, text size, dark/light |
+| Display | Settings: 汉字 + pinyin (pinyin under each character) or Pinyin only, Simplified or as written, text size, dark/light |
 | No timestamps | Plain lyrics switch to tap-to-advance |
 
 ## Development
 
 Static files only: `index.html`, `app.css`, `app.js`, `sw.js`, `manifest.webmanifest`.
+`vendor/t2s.js` is a Traditional→Simplified converter built from OpenCC's TSCharacters/TSPhrases (Apache-2.0).
 `vendor/pinyin-pro.js` is pinyin-pro 3.29.5 (MIT), compiled from source and bundled as a single browser file.
 Bump `CACHE` in `sw.js` and `VERSION` in `app.js` on every release so phones pick up the new files.
 

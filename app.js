@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.2.1';
+const VERSION = '0.3.0';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -20,7 +20,7 @@ let song = null;          // {key,title,artist,album,dur,timed,lines,alts}
 let mode = 'idle';        // idle | wait | run | tap
 let cur = -1, base = 0, t0 = 0, running = false, ended = false, follow = true, followT = 0, seeking = false;
 let lastResults = [];
-const prefs = { mode: store.get('mode', 'm-both') === 'm-py' ? 'm-py' : 'm-both', size: store.get('size', 30), skin: store.get('skin', 'dark') };
+const prefs = { mode: store.get('mode', 'm-both') === 'm-py' ? 'm-py' : 'm-both', size: store.get('size2', 38), script: store.get('script', 'simp'), skin: store.get('skin', 'dark') };
 
 /* ---------- LRC + pinyin ---------- */
 function parseLRC(txt) {
@@ -47,6 +47,12 @@ function toUnits(text) {
   }
   flush(); return units;
 }
+const simp = t => (prefs.script === 'simp' && window.toSimplified) ? window.toSimplified(t) : String(t ?? '');
+function pyText(t) {
+  const P = PP(); t = String(t ?? ''); if (!P || ![...t].some(isZh)) return '';
+  try { return P.pinyin(t, { toneType: 'symbol', toneSandhi: true, nonZh: 'consecutive' }).replace(/\s+/g, ' ').trim(); } catch (e) { return ''; }
+}
+const tpRow = t => { const p = pyText(simp(t)); return p ? '<div class="tp">' + esc(p) + '</div>' : ''; };
 function readings(ch) { const P = PP(); if (!P) return []; try { return P.pinyin(ch, { multiple: true, type: 'array', toneType: 'symbol' }); } catch (e) { return []; } }
 
 /* ---------- LRCLIB ---------- */
@@ -72,12 +78,12 @@ async function findByMeta(title, artist) {
 function show(view) {
   $('#browse').hidden = view !== 'browse'; $('#sing').hidden = view !== 'sing';
   $('#nowbar').hidden = !(view === 'browse' && song);
-  if (song) $('#nowT').textContent = song.title + (song.artist ? ' · ' + song.artist : '');
+  if (song) $('#nowT').textContent = simp(song.title) + (song.artist ? ' · ' + simp(song.artist) : '');
   if (view === 'sing' && cur >= 0) requestAnimationFrame(() => scrollToLine(cur, true));
 }
 function resultRow(r, extra) {
   const synced = !!r.syncedLyrics;
-  return '<button class="res" data-id="' + esc(r.id) + '"><span class="art">' + esc((r.trackName || '?').trim().charAt(0)) + '</span><span class="mid"><div class="t">' + esc(r.trackName) + '</div><div class="a">' + esc(r.artistName) + (r.albumName ? ' · ' + esc(r.albumName) : '') + (r.duration ? ' · ' + fmt(r.duration) : '') + '</div></span><span class="badge' + (synced ? ' s' : '') + '">' + (extra || (synced ? 'Synced' : 'Text only')) + '</span></button>';
+  return '<button class="res" data-id="' + esc(r.id) + '"><span class="art">' + esc(simp((r.trackName || '?').trim().charAt(0))) + '</span><span class="mid"><div class="t">' + esc(simp(r.trackName)) + '</div>' + tpRow(r.trackName) + '<div class="a">' + esc(simp(r.artistName)) + (r.albumName ? ' · ' + esc(r.albumName) : '') + (r.duration ? ' · ' + fmt(r.duration) : '') + '</div></span><span class="badge' + (synced ? ' s' : '') + '">' + (extra || (synced ? 'Synced' : 'Text only')) + '</span></button>';
 }
 function renderResults(list, q) {
   lastResults = list;
@@ -86,7 +92,7 @@ function renderResults(list, q) {
 }
 function renderLists() {
   const fav = store.get('fav', []), hist = store.get('hist', []);
-  const row = s => '<button class="res" data-key="' + esc(s.key) + '"><span class="art">' + esc((s.title || '?').charAt(0)) + '</span><span class="mid"><div class="t">' + esc(s.title) + '</div><div class="a">' + esc(s.artist || '') + '</div></span>' + (fav.some(f => f.key === s.key) ? '<span class="badge s">★</span>' : '') + '</button>';
+  const row = s => '<button class="res" data-key="' + esc(s.key) + '"><span class="art">' + esc(simp((s.title || '?').charAt(0))) + '</span><span class="mid"><div class="t">' + esc(simp(s.title)) + '</div>' + tpRow(s.title) + '<div class="a">' + esc(simp(s.artist || '')) + '</div></span>' + (fav.some(f => f.key === s.key) ? '<span class="badge s">★</span>' : '') + '</button>';
   $('#lists').innerHTML = (fav.length ? '<div class="sec">Favourites</div>' + fav.map(row).join('') : '')
     + (hist.length ? '<div class="sec">Recent</div>' + hist.slice(0, 15).map(row).join('') : '');
 }
@@ -112,7 +118,7 @@ function recFromLrclib(r) {
 function openRecord(rec, alts) {
   log('open', rec.key, rec.title, rec.artist);
   cacheSong(rec); rememberHistory(rec);
-  const parsed = parseLRC(rec.lrc);
+  const parsed = parseLRC(simp(rec.lrc));
   const ov = store.get('ov.' + rec.key, {});
   song = { ...rec, timed: parsed.timed, alts: alts || null };
   song.lines = parsed.lines.map((l, i) => {
@@ -121,8 +127,9 @@ function openRecord(rec, alts) {
   });
   song.lines.forEach((l, i) => { const nx = song.lines[i + 1]; l.end = (nx && nx.t - l.t < 8) ? nx.t - 0.15 : l.t + Math.min(5, 0.42 * l.u.length + 0.8); });
   if (song.timed && !song.dur) song.dur = song.lines.at(-1).t + 10;
-  $('#sT').textContent = song.title || 'Lyrics';
-  $('#sA').textContent = (song.artist || '') + (song.alts && song.alts.length > 1 ? ' · ' + song.alts.length + ' versions' : '');
+  $('#sT').textContent = simp(song.title) || 'Lyrics';
+  $('#sP').textContent = pyText(simp(song.title));
+  $('#sA').textContent = simp(song.artist || '') + (pyText(simp(song.artist)) ? ' (' + pyText(simp(song.artist)) + ')' : '') + (song.alts && song.alts.length > 1 ? ' · ' + song.alts.length + ' versions' : '');
   $('#bFav').classList.toggle('on', store.get('fav', []).some(f => f.key === song.key));
   $('#tEnd').textContent = song.timed ? fmt(song.dur) : '—';
   $('#seek').disabled = !song.timed;
@@ -147,6 +154,7 @@ function applyPrefs() {
   const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = prefs.skin === 'light' ? '#fbf6f1' : '#140d1c';
   $('#size').value = prefs.size; $('#sizeV').textContent = prefs.size;
   for (const b of document.querySelectorAll('#segMode button')) b.setAttribute('aria-pressed', b.dataset.v === prefs.mode);
+  for (const b of document.querySelectorAll('#segScript button')) b.setAttribute('aria-pressed', b.dataset.v === prefs.script);
   for (const b of document.querySelectorAll('#segSkin button')) b.setAttribute('aria-pressed', b.dataset.v === prefs.skin);
 }
 function go(i) {
@@ -270,7 +278,8 @@ const openSettings = () => { $('#offRow').hidden = !(song && song.timed); $('#of
 $('#bSet1').onclick = openSettings; $('#bSet2').onclick = openSettings;
 $('#segMode').onclick = e => { const b = e.target.closest('button'); if (!b) return; prefs.mode = b.dataset.v; store.set('mode', prefs.mode); applyPrefs(); if (cur >= 0) scrollToLine(cur, true); };
 $('#segSkin').onclick = e => { const b = e.target.closest('button'); if (!b) return; prefs.skin = b.dataset.v; store.set('skin', prefs.skin); applyPrefs(); };
-$('#size').oninput = e => { prefs.size = +e.target.value; store.set('size', prefs.size); applyPrefs(); };
+$('#segScript').onclick = e => { const b = e.target.closest('button'); if (!b || b.dataset.v === prefs.script) return; prefs.script = b.dataset.v; store.set('script', prefs.script); applyPrefs(); renderLists(); if (song) { const keep = { t: now(), mode, cur }; const rec = store.get('song.' + song.key, null); if (rec) { openRecord(rec, song.alts); if (keep.mode === 'run') { startAt(keep.t); } } } };
+$('#size').oninput = e => { prefs.size = +e.target.value; store.set('size2', prefs.size); applyPrefs(); };
 $('#size').onchange = () => { if (cur >= 0) scrollToLine(cur, true); };
 $('#bReset').onclick = () => { if (!song) return; store.set(offKey(), 0); $('#offV').textContent = '0.0 s'; toast('Offset reset'); };
 $('#bFav').onclick = () => {

@@ -46,7 +46,7 @@
   <section id="sing" class="view" hidden>
     <header class="shead">
       <button class="ib" id="bHome" aria-label="Back to search"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
-      <button class="song" id="bSong" aria-label="Song and other versions"><div class="t" id="sT"></div><div class="a" id="sA"></div></button>
+      <button class="song" id="bSong" aria-label="Song and other versions"><div class="t" id="sT"></div><div class="tp" id="sP"></div><div class="a" id="sA"></div></button>
       <button class="ib" id="bFav" aria-label="Save to favourites"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8 6.6 19.7l1.1-6.1L3.2 9.4l6.1-.8z"/></svg></button>
       <button class="ib" id="bSet2" aria-label="Display settings"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
       <div class="prog"><span id="tNow">0:00</span><input type="range" id="seek" min="0" max="1000" value="0" aria-label="Song position"><span id="tEnd">0:00</span></div>
@@ -71,7 +71,8 @@
 
 <section class="sheet" id="shSet" aria-label="Settings"><div class="grab"></div><h2>Display</h2>
   <h3>Show</h3><div class="seg" id="segMode"><button data-v="m-both">汉字 + pinyin</button><button data-v="m-py">Pinyin only</button></div>
-  <h3>Text size</h3><div class="row"><span>A</span><input type="range" id="size" min="20" max="48" step="2" aria-label="Text size"><span class="bigA">A</span><span class="sample" id="sizeV"></span></div>
+  <h3>Text size</h3><div class="row"><span>A</span><input type="range" id="size" min="24" max="60" step="2" aria-label="Text size"><span class="bigA">A</span><span class="sample" id="sizeV"></span></div>
+  <h3>Characters</h3><div class="seg" id="segScript"><button data-v="simp">Simplified 简体</button><button data-v="orig">As written</button></div>
   <h3>Theme</h3><div class="seg" id="segSkin"><button data-v="dark">Dark</button><button data-v="light">Light</button><button data-v="light dark">Auto</button></div>
   <div id="offRow"><h3>Sync offset for this song</h3><div class="row"><b id="offV">0.0 s</b><span class="muted">Saved per song</span><button class="link" id="bReset">Reset</button></div></div>
   <p class="note">Wrong pinyin? Press and hold a syllable to pick another reading (多音字). Your fix is saved for that song.</p>
@@ -105,6 +106,7 @@
 <div class="toast" id="toast" role="status"></div>
 
 <script src="vendor/pinyin-pro.js"></script>
+<script src="vendor/t2s.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
