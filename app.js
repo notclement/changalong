@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.8.6';
+const VERSION = '0.8.7';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -204,7 +204,7 @@ function matchLocal(q) {
     else if (/^[a-z0-9]+$/.test(lat)) {                                                                                   // first letters of the title's pinyin
       if (e.tI === lat) score = 100; else if (lat.length >= 2 && e.tI.startsWith(lat)) score = 85; else if (lat.length >= 3 && e.tI.includes(lat)) score = 40;
     }
-    if (score) hits.push([score + (e.key ? 5 : 0), e]);
+    if (score) hits.push([score + (e.key ? 5 : 0) + (!cjk && [...e.title].some(isZh) ? 20 : 0), e]);  // initials: Chinese songs first
   }
   return hits.sort((a, b) => b[0] - a[0]).slice(0, 8).map(x => x[1]);
 }
@@ -230,7 +230,11 @@ async function doSearch(q) {
   $('#results').innerHTML = sugg + '<p class="msg">Searching lyrics…</p>';
   // pure initials like "nnmat" mean nothing to the lyrics server, so only suggestions are shown for those
   if (lastSugg.length && /^[a-z]{2,8}$/i.test(q.replace(/\s+/g, ''))) { $('#results').innerHTML = sugg; return; }
-  try { const list = await searchQ(q); renderResults(list, q); if (sugg) $('#results').insertAdjacentHTML('afterbegin', sugg); }
+  try {
+    let list = await searchQ(q);
+    // a short run of letters is probably pinyin initials: put Chinese titles first
+    if (/^[a-z]{2,8}$/i.test(q.replace(/\s+/g, ''))) list = [...list.filter(r => [...(r.trackName || '')].some(isZh)), ...list.filter(r => ![...(r.trackName || '')].some(isZh))];
+    renderResults(list, q); if (sugg) $('#results').insertAdjacentHTML('afterbegin', sugg); }
   catch (e) { log('search error', e); $('#results').innerHTML = sugg + '<p class="msg">Couldn’t reach the lyrics server. Check your connection and try again.</p>'; }
 }
 
