@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.8.3';
+const VERSION = '0.8.4';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -237,6 +237,7 @@ async function doSearch(q) {
 
 /* ---------- duet voices: 男 / 女 / 合 markers ---------- */
 const VOICES = { m: { tag: '男', label: 'Him' }, f: { tag: '女', label: 'Her' }, b: { tag: '合', label: 'Both' } };
+const INTERJ = /^(啊|阿|哦|喔|噢|呀|哎|唉|嗯|嘿|哟|喲|oh|ah|ooh|woo|yeah|wo|whoa|la)$/i;
 const CREDIT = /^(作词|作曲|编曲|词|曲|制作人?|监制|演唱|原唱|混音|和声|录音|母带|出品|发行|吉他|贝斯|鼓|弦乐|配唱|统筹|OP|SP|ISRC|Lyrics?|Lyricist|Composer|Arranger|Producer|Written by|Music by)\s*[:：]/i;
 const voiceOf = w => {
   w = w.trim().toLowerCase();
@@ -324,7 +325,13 @@ function openRecord(rec, alts) {
   song.rate = Math.min(0.8, Math.max(0.18, per.length ? per[Math.floor(per.length * 0.3)] : 0.42));
   song.lines.forEach((l, i) => {
     const nx = song.lines[i + 1], gap = nx ? nx.t - l.t : 6;
-    l.end = l.words ? Math.max(l.t + 0.3, l.u.at(-1).tm[1]) : l.t + Math.max(0.6, Math.min(gap - 0.15, l.u.length * song.rate * 1.15 + 0.3, 7));
+    // Sung straight into the next line: fill the whole gap (held notes, a long 啊… at the start).
+    // Followed by a pause: sweep at the song's pace, then wait.
+    const need = l.u.length * song.rate * 1.15 + 0.3;
+    l.end = l.words ? Math.max(l.t + 0.3, l.u.at(-1).tm[1]) : l.t + Math.max(0.6, gap < need * 1.8 ? gap - 0.15 : Math.min(need, 7));
+    // Uneven sweep: interjections (啊, 哦, oh…) and the last syllable are usually held longer.
+    l.w = l.u.map((u, k) => (INTERJ.test(u.h) ? 3 : 1) * (k === l.u.length - 1 ? 1.6 : 1));
+    l.cum = []; l.W = l.w.reduce((a, w, k) => (l.cum[k] = a, a + w), 0);
   });
   // Lines that start after a pause (intro, instrumental, long breath) get a 3-2-1 dot countdown.
   song.lines.forEach((l, i) => { const p = song.lines[i - 1]; l.lead = song.timed && !l.credit && (!p || p.credit ? (l.t >= 2.5) : (l.t - p.end >= 3.5)); });
@@ -406,7 +413,7 @@ function tick() {
       const f = Math.min(1, Math.max(0, (tt - l.t) / (l.end - l.t))), n = l.u.length;
       el.querySelectorAll('.u').forEach((s, k) => {
         const tm = l.words && l.u[k].tm;   // word-timed: follow the real rhythm (held notes, fast runs)
-        const p = prefs.hl === 'line' ? 1 : tm ? (tt - tm[0]) / Math.max(0.05, tm[1] - tm[0]) : f * n - k;
+        const p = prefs.hl === 'line' ? 1 : tm ? (tt - tm[0]) / Math.max(0.05, tm[1] - tm[0]) : l.W ? (f * l.W - l.cum[k]) / l.w[k] : f * n - k;
         s.style.setProperty('--p', Math.min(1, Math.max(0, p)) * 100 + '%');
       });
     }
