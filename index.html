@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#140d1c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pinyin KTV">
+<title>Pinyin Karaoke</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- BROWSE: listen, search, recent, favourites -->
+  <section id="browse" class="view">
+    <header class="bhead">
+      <h1>Pinyin Karaoke</h1>
+      <button class="ib" id="bSet1" aria-label="Settings"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
+    </header>
+    <div class="scroll-y">
+      <div class="listen-hero">
+        <a class="big" id="bListen" href="shortcuts://run-shortcut?name=Pinyin%20Karaoke">Listen</a>
+        <p class="hero-s">Shazam finds the song, then the lyrics open here in pinyin.</p>
+        <button class="link" id="bHowListen">First time? Set up the Shortcut</button>
+      </div>
+      <form id="fSearch" class="searchbar" role="search">
+        <input id="q" class="field" type="search" placeholder="Title or singer, 中文 or English" autocomplete="off" enterkeyhint="search">
+        <button class="btn sm" type="submit">Search</button>
+      </form>
+      <div id="results" aria-live="polite"></div>
+      <div id="lists"></div>
+      <div class="foot-links">
+        <button class="link" id="bPaste">Paste lyrics</button>
+        <span class="muted">Lyrics: LRCLIB · Pinyin: pinyin-pro</span>
+      </div>
+    </div>
+    <button class="nowbar" id="nowbar" hidden><span class="eq"></span><span id="nowT"></span><span class="muted">Back to lyrics</span></button>
+  </section>
+
+  <!-- SING: lyric stage -->
+  <section id="sing" class="view" hidden>
+    <header class="shead">
+      <button class="ib" id="bHome" aria-label="Back to search"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <button class="song" id="bSong" aria-label="Song and other versions"><div class="t" id="sT"></div><div class="a" id="sA"></div></button>
+      <button class="ib" id="bFav" aria-label="Save to favourites"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8 6.6 19.7l1.1-6.1L3.2 9.4l6.1-.8z"/></svg></button>
+      <button class="ib" id="bSet2" aria-label="Display settings"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
+      <div class="prog"><span id="tNow">0:00</span><input type="range" id="seek" min="0" max="1000" value="0" aria-label="Song position"><span id="tEnd">0:00</span></div>
+    </header>
+    <main class="stage-wrap">
+      <div id="stage"></div>
+      <div class="banner" id="banner"></div>
+      <button class="back" id="bBack">Back to current line</button>
+    </main>
+    <footer class="dock-wrap">
+      <button class="tap" id="bTap">Tap as the next line starts</button>
+      <div class="dock">
+        <button class="nudge" id="bBehind" aria-label="Lyrics are behind the singer: jump ahead half a second">Behind<small>+0.5s</small></button>
+        <div class="mid"><a class="mic" id="bListen2" href="shortcuts://run-shortcut?name=Pinyin%20Karaoke" aria-label="Listen for the next song"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></a><div class="mid-t" id="midT">Next song</div></div>
+        <button class="nudge" id="bAhead" aria-label="Lyrics are ahead of the singer: hold back half a second">Ahead<small>−0.5s</small></button>
+      </div>
+    </footer>
+  </section>
+</div>
+
+<div class="veil" id="veil"></div>
+
+<section class="sheet" id="shSet" aria-label="Settings"><div class="grab"></div><h2>Display</h2>
+  <h3>Show</h3><div class="seg" id="segMode"><button data-v="m-py">Pinyin</button><button data-v="m-both">Both</button><button data-v="m-hz">汉字</button></div>
+  <h3>Text size</h3><div class="row"><span>A</span><input type="range" id="size" min="20" max="48" step="2" aria-label="Text size"><span class="bigA">A</span><span class="sample" id="sizeV"></span></div>
+  <h3>Theme</h3><div class="seg" id="segSkin"><button data-v="dark">Dark</button><button data-v="light">Light</button><button data-v="light dark">Auto</button></div>
+  <div id="offRow"><h3>Sync offset for this song</h3><div class="row"><b id="offV">0.0 s</b><span class="muted">Saved per song</span><button class="link" id="bReset">Reset</button></div></div>
+  <p class="note">Wrong pinyin? Press and hold a syllable to pick another reading (多音字). Your fix is saved for that song.</p>
+  <button class="link" id="bHowListen2" style="padding-left:0">Shortcut setup</button>
+</section>
+
+<section class="sheet" id="shVer" aria-label="Other versions"><div class="grab"></div><h2>Other versions</h2><p class="note">Live, remastered and KTV releases often have different timing. Pick the one whose length matches.</p><div id="verList"></div></section>
+
+<section class="sheet" id="shPaste" aria-label="Paste lyrics"><div class="grab"></div><h2>Paste lyrics</h2>
+  <textarea class="field" id="paste" placeholder="[00:12.30]你好世界&#10;[00:16.80]我想和你一起看日落&#10;&#10;Plain lines work too: you tap to move on."></textarea>
+  <div class="two"><button class="btn ghost" id="bSample">Try example</button><button class="btn" id="bUse">Use these lyrics</button></div>
+</section>
+
+<section class="sheet" id="shHow" aria-label="Shortcut setup"><div class="grab"></div><h2>Set up “Listen” (once)</h2>
+  <p class="note">iPhone's built-in Shazam does the listening. A small Shortcut passes the song name to this page.</p>
+  <ol class="steps">
+    <li>Open the <b>Shortcuts</b> app, tap <b>+</b>, and name the shortcut exactly <b>Pinyin Karaoke</b>.</li>
+    <li>Add <b>Recognize Music</b>.</li>
+    <li>Add <b>Get Details of Shazam Media</b> → <b>Title</b>. Then add <b>URL Encode</b>. Add <b>Set Variable</b> named <b>T</b>.</li>
+    <li>Add <b>Get Details of Shazam Media</b> → <b>Artist</b> (tap the input and pick <i>Shazam Media</i> again), then <b>URL Encode</b>, then <b>Set Variable</b> named <b>A</b>.</li>
+    <li>Add <b>Text</b> with:<br><code id="tplUrl"></code><button class="link" id="bCopyUrl">Copy</button></li>
+    <li>Add <b>Open URLs</b>. Done. Tip: Settings → Accessibility → Touch → Back Tap → Double Tap → <i>Pinyin Karaoke</i>.</li>
+  </ol>
+</section>
+
+<div class="pop" id="pop"><p>Reading for <b id="popH"></b></p><div class="chips" id="popC"></div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="vendor/pinyin-pro.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
