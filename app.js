@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.8.7';
+const VERSION = '0.8.8';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -186,7 +186,7 @@ function pyKeys(t) {
 }
 function buildLocal() {
   const seen = new Set(), out = [];
-  const add = (title, artist, extra) => { const k = simp(title) + '|' + simp(artist || ''); if (seen.has(k)) return; seen.add(k); out.push({ title: simp(title), artist: simp(artist || ''), tI: pyKeys(title).ini, ...extra }); };
+  const add = (title, artist, extra) => { const k = simp(title) + '|' + simp(artist || ''); if (seen.has(k)) return; seen.add(k); out.push({ title: simp(title), artist: simp(artist || ''), tI: [...String(title)].some(isZh) ? pyKeys(title).ini : '', ...extra }); };
   for (const f of store.get('fav', [])) add(f.title, f.artist, { key: f.key });
   for (const h of store.get('hist', [])) add(h.title, h.artist, { key: h.key });
   for (const [t, a, y] of (window.KTV_CATALOG || [])) add(t, a, { yue: y === 'y' });
@@ -201,7 +201,7 @@ function matchLocal(q) {
     let score = 0;
     const tt = e.title.replace(/\s+/g, '');
     if (cjk) { if (tt === sq) score = 100; else if (tt.startsWith(sq)) score = 90; else if (tt.includes(sq)) score = 70; }  // part of a title
-    else if (/^[a-z0-9]+$/.test(lat)) {                                                                                   // first letters of the title's pinyin
+    else if (e.tI && /^[a-z0-9]+$/.test(lat)) {                                                                                   // first letters of the title's pinyin
       if (e.tI === lat) score = 100; else if (lat.length >= 2 && e.tI.startsWith(lat)) score = 85; else if (lat.length >= 3 && e.tI.includes(lat)) score = 40;
     }
     if (score) hits.push([score + (e.key ? 5 : 0) + (!cjk && [...e.title].some(isZh) ? 20 : 0), e]);  // initials: Chinese songs first
