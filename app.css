@@ -75,8 +75,8 @@ textarea.field{min-height:160px;font:15px/1.5 var(--han);resize:vertical;backgro
 #stage::-webkit-scrollbar{display:none}
 #stage::before{content:"";display:block;height:24%}
 #stage::after{content:"";display:block;height:60%}
-.ln{padding:12px 0;transition:opacity .3s,transform .3s;opacity:.4;transform-origin:left center;transform:scale(.84);display:flex;flex-wrap:wrap;column-gap:.3em;row-gap:2px;cursor:pointer}
-.ln.now{opacity:1;transform:none}.ln.next{opacity:.62}.ln.past{opacity:.24}
+.ln{padding:12px 0;transition:opacity .3s,transform .3s;opacity:.7;transform-origin:left center;transform:scale(.84);display:flex;flex-wrap:wrap;column-gap:.3em;row-gap:2px;cursor:pointer}
+.ln.now{opacity:1;transform:none}.ln.next{opacity:.85}.ln.past{opacity:.45}
 #stage.wait .ln{opacity:.85;transform:scale(.86)}
 #stage.wait .ln:active{opacity:1;color:var(--hl)}
 /* each character stacks: hanzi on top, its pinyin underneath in a smaller size */
@@ -89,7 +89,7 @@ textarea.field{min-height:160px;font:15px/1.5 var(--han);resize:vertical;backgro
 .m-py .u.x i{display:block;font-size:calc(var(--fs)*.8)}
 .m-py .u.x b{display:none}
 .now .u i{color:transparent;background:linear-gradient(90deg,var(--hl) var(--p,0%),var(--un) var(--p,0%));-webkit-background-clip:text;background-clip:text}
-.now .u b{color:transparent;background:linear-gradient(90deg,var(--hl) var(--p,0%),var(--dim) var(--p,0%));-webkit-background-clip:text;background-clip:text}
+.now .u b{color:transparent;background:linear-gradient(90deg,var(--hl) var(--p,0%),color-mix(in srgb,var(--ink) 85%,transparent) var(--p,0%));-webkit-background-clip:text;background-clip:text}
 .u.fix b{text-decoration:underline dotted var(--hl) 2px;text-underline-offset:4px}
 /* duet voices: colour tag where the singer changes; upcoming lines tinted so turns are visible ahead */
 .v-m{--vc:var(--vm)}.v-f{--vc:var(--vf)}.v-b{--vc:var(--vb)}
@@ -216,7 +216,7 @@ html,body,button,a,input,.seg,#stage{touch-action:manipulation}
 .about-app{margin:22px 0 4px;text-align:center;font-size:13px;color:var(--dim)}.about-app a{color:var(--hl);text-decoration:none}
 
 /* not-yet-sung part of the current line: dimmer, so the sweep reads at a glance */
-:root{--un:color-mix(in srgb,var(--ink) 58%,transparent)}
+:root{--un:var(--ink)}
 /* Tap. Not in sync yet: a bottom bar whose right end rises into a tall thumb pad (right hand), below the lyrics.
    In sync: shrinks to a small round button floating bottom-right above the dock. */
 .dock-wrap{position:relative}
@@ -250,3 +250,7 @@ html,body,button,a,input,.seg,#stage{touch-action:manipulation}
 .song .tg{display:flex;justify-content:center;flex-wrap:nowrap;gap:5px;margin-top:4px;overflow:hidden;cursor:pointer}
 .song .tg:empty{display:none}
 .song .tg span{flex:none;font-size:10.5px;line-height:1;padding:3px 7px;border-radius:99px;background:var(--sf);color:var(--dim);letter-spacing:.01em}
+
+/* only the line being sung is white (orange as it's sung); every other line is grey */
+.ln:not(.now):not([class*=" v-"]) .u i{color:var(--dim)}
+.ln:not(.now):not([class*=" v-"]) .u b{color:color-mix(in srgb,var(--dim) 80%,transparent)}

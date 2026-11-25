@@ -67,6 +67,9 @@ Made by [Clement](https://www.linkedin.com/in/clementsg).
 
 ## Changelog
 
+**1.1.5**
+- Line being sung is white, turning orange as it's sung; all other lines grey
+
 **1.1.4**
 - Tags back in the header as a small row under the singer
 
