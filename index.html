@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="app.css?v=1.0.5">
+<link rel="stylesheet" href="app.css?v=1.0.6">
 </head>
 <body>
 <div class="app">
@@ -76,6 +76,7 @@
   <div id="offRow"><h3>Sync offset for this song</h3><div class="row"><b id="offV">0.0 s</b><span class="muted">Saved per song</span><button class="link" id="bReset">Reset</button></div></div>
   <div id="sungRow"><h3>This song is sung in</h3><div class="seg" id="segSung"><button data-v="cmn">Mandarin 普通话</button><button data-v="yue">Cantonese 粤语</button></div><p class="note">Cantonese shows jyutping (e.g. nei5 hou2: the number is the tone). Remembered for this song.</p></div>
   <h3>Characters</h3><div class="seg" id="segScript"><button data-v="simp">Simplified 简体</button><button data-v="orig">As written</button></div>
+  <h3>When a song ends</h3><div class="seg" id="segNext"><button data-v="off">Do nothing</button><button data-v="ask">Ask to listen again</button></div><p class="note">Ask shows a button to run the Listen shortcut for the next song.</p>
   <h3>Theme</h3><div class="seg" id="segSkin"><button data-v="dark">Dark</button><button data-v="light">Light</button><button data-v="light dark">Auto</button></div>
   <h3>Backup AI (optional)</h3>
   <p class="note" style="margin-top:0">Song summaries and initials search use a free AI that can get busy. Add a free Google Gemini key as a backup: get one at <a class="link" style="padding:0" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. It stays on this phone.</p>
@@ -137,9 +138,9 @@
 <div class="pop" id="pop"><p>Reading for <b id="popH"></b></p><div class="chips" id="popC"></div></div>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="vendor/pinyin-pro.js?v=1.0.5"></script>
-<script src="vendor/t2s.js?v=1.0.5"></script>
-<script src="vendor/catalog.js?v=1.0.5"></script>
-<script src="app.js?v=1.0.5"></script>
+<script src="vendor/pinyin-pro.js?v=1.0.6"></script>
+<script src="vendor/t2s.js?v=1.0.6"></script>
+<script src="vendor/catalog.js?v=1.0.6"></script>
+<script src="app.js?v=1.0.6"></script>
 </body>
 </html>

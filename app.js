@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '1.0.5';
+const VERSION = '1.0.6';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -394,6 +394,7 @@ function applyPrefs() {
   const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = prefs.skin === 'light' ? '#fbf6f1' : '#140d1c';
   $('#size').value = prefs.size; $('#sizeV').textContent = prefs.size; $('#size').style.setProperty('--p', (prefs.size - 24) / 36 * 100 + '%');
   for (const b of document.querySelectorAll('#segMode button')) b.setAttribute('aria-pressed', b.dataset.v === prefs.mode);
+  for (const b of document.querySelectorAll('#segNext button')) b.setAttribute('aria-pressed', b.dataset.v === store.get('next', 'off'));
   for (const b of document.querySelectorAll('#segHl button')) b.setAttribute('aria-pressed', b.dataset.v === prefs.hl);
   for (const b of document.querySelectorAll('#segScript button')) b.setAttribute('aria-pressed', b.dataset.v === prefs.script);
   for (const b of document.querySelectorAll('#segSkin button')) b.setAttribute('aria-pressed', b.dataset.v === prefs.skin);
@@ -419,7 +420,8 @@ function scrollToLine(i, instant) {
 let lastBanner = null;
 function banner(what) {
   if (what === lastBanner) return; lastBanner = what; const b = $('#banner');
-  if (what === 'wait') what = '';                                   // waiting: no prompt, the user taps a line when singing starts
+  if (what === 'wait') what = '';
+  if (what === 'next') { b.className = 'banner cta'; b.innerHTML = '<b>Song finished. Listen for the next one?</b><div class="two" style="margin-top:10px"><button class="btn ghost sm" id="bNextNo">Not now</button><a class="btn sm" id="bNextGo" href="' + $('#bListen2').getAttribute('href') + '">Listen</a></div>'; return; }                                   // waiting: no prompt, the user taps a line when singing starts
   b.className = 'banner'; b.innerHTML = what || '';
 }
 const now = () => running ? base + (performance.now() - t0) / 1000 : base;
@@ -432,7 +434,7 @@ const offset = () => song ? store.get(offKey(), 0) : 0;
 function tick() {
   if (song && song.timed && mode === 'run') {
     let t = now();
-    if (t > song.dur && !ended) { ended = true; running = false; base = song.dur; banner('Song finished · tap <b>Next song</b> to listen again'); log('ended'); }
+    if (t > song.dur && !ended) { ended = true; running = false; base = song.dur; banner(store.get('next', 'off') === 'ask' ? 'next' : 'Song finished · tap <b>Next song</b> to listen again'); log('ended'); }
     t = Math.min(t, song.dur);
     let i = -1; for (let k = 0; k < song.lines.length; k++) { if (song.lines[k].t <= t + offset()) i = k; else break; }
     const tt = t + offset();
@@ -583,6 +585,8 @@ function reopenKeep() {
   const r = openRecord(rec, keep.alts);
   if (r && r.then) r.then(resume); else resume();
 }
+$('#segNext').onclick = e => { const b = e.target.closest('button'); if (!b) return; store.set('next', b.dataset.v); applyPrefs(); };
+$('#banner').addEventListener('click', e => { if (e.target.closest('#bNextNo, #bNextGo')) banner('Song finished · tap <b>Next song</b> to listen again'); });
 $('#segHl').onclick = e => { const b = e.target.closest('button'); if (!b) return; prefs.hl = b.dataset.v; store.set('hl', prefs.hl); applyPrefs(); };
 $('#segScript').onclick = e => { const b = e.target.closest('button'); if (!b || b.dataset.v === prefs.script) return; prefs.script = b.dataset.v; store.set('script', prefs.script); applyPrefs(); renderLists(); reopenKeep(); };
 $('#segSung').onclick = e => { const b = e.target.closest('button'); if (!b || !song) return; const on = b.dataset.v === 'yue'; if (on === !!song.yue) return; store.set('yue.' + song.key, on); closeAll(); toast(on ? 'Cantonese readings (jyutping)' : 'Mandarin readings (pinyin)'); reopenKeep(); };
