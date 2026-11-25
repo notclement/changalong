@@ -77,7 +77,7 @@
   <h3>Theme</h3><div class="seg" id="segSkin"><button data-v="dark">Dark</button><button data-v="light">Light</button><button data-v="light dark">Auto</button></div>
   <div id="offRow"><h3>Sync offset for this song</h3><div class="row"><b id="offV">0.0 s</b><span class="muted">Saved per song</span><button class="link" id="bReset">Reset</button></div></div>
   <p class="note">Wrong pinyin? Press and hold a syllable to pick another reading (多音字). Your fix is saved for that song.</p>
-  <button class="link" id="bHowListen2" style="padding-left:0">Shortcut setup</button>
+  <button class="link" id="bInfo" style="padding-left:0">What do the tags mean?</button> <button class="link" id="bHowListen2">Shortcut setup</button>
 </section>
 
 <section class="sheet" id="shVer" aria-label="Other versions"><div class="grab"></div><h2>Other versions</h2><p class="note">Live, remastered and KTV releases often have different timing. Pick the one whose length matches.</p><div id="verList"></div></section>
@@ -103,6 +103,25 @@
   <p class="note">Tip: Settings → Accessibility → Touch → Back Tap → Double Tap → <i>ChangAlong</i>.</p>
 </section>
 
+<section class="sheet" id="shInfo" aria-label="What the tags mean"><div class="grab"></div><h2>What the tags mean</h2>
+  <p class="note">Each song shows one grey tag. It tells you how precisely the lyrics are timed. That depends on the lyrics file, not on the app.</p>
+  <dl class="tags">
+    <dt><span class="tag">Word synced</span></dt><dd>Every word has its own start time. The highlight follows the real rhythm: it lingers on held notes and speeds through fast parts. Best experience.</dd>
+    <dt><span class="tag">Synced</span></dt><dd>Only each line has a start time. Lines appear exactly on time, but the highlight sweeps evenly across the line, so it won't stretch on a long note.</dd>
+    <dt><span class="tag">Lyrics only</span></dt><dd>No timing at all. Tap <b>Next line</b> as you sing to move along. Try <b>Other versions</b> (tap the song title) for a synced one.</dd>
+  </dl>
+  <h3>Colours in duets</h3>
+  <dl class="tags">
+    <dt><span class="dot" style="background:var(--vm)"></span>男 Him</dt><dd>Male part</dd>
+    <dt><span class="dot" style="background:var(--vf)"></span>女 Her</dt><dd>Female part</dd>
+    <dt><span class="dot" style="background:var(--vb)"></span>合 Both</dt><dd>Sung together</dd>
+  </dl>
+  <p class="note">Only shown when the lyrics file marks who sings each line.</p>
+  <h3>Other marks</h3>
+  <dl class="tags">
+    <dt><span style="text-decoration:underline dotted var(--hl) 2px;text-underline-offset:4px;font-weight:600">zhǐ</span></dt><dd>A reading you corrected by pressing and holding the syllable.</dd>
+  </dl>
+</section>
 <div class="pop" id="pop"><p>Reading for <b id="popH"></b></p><div class="chips" id="popC"></div></div>
 <div class="toast" id="toast" role="status"></div>
 

@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.5.1';
+const VERSION = '0.5.2';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -421,6 +421,8 @@ $('#aiPrompt').textContent = aiPrompt;
 $('#bCopyPrompt').onclick = async () => { try { await navigator.clipboard.writeText(aiPrompt); toast('Prompt copied'); } catch (e) { toast('Copy failed: select the text instead'); } };
 $('#bHowListen').onclick = () => open('#shHow'); $('#bHowListen2').onclick = () => open('#shHow');
 $('#bPaste').onclick = () => open('#shPaste');
+$('#bInfo').onclick = () => open('#shInfo');
+$('#sP').addEventListener('click', e => { if (e.target.closest('.tag')) { e.stopPropagation(); open('#shInfo'); } });
 $('#bSample').onclick = () => { $('#paste').value = '[00:03.00]你好世界\n[00:07.00]我想和你一起看日落\n[00:11.50]长大以后还会记得\n[00:16.00]这首歌的快乐'; };
 $('#bUse').onclick = () => {
   const txt = $('#paste').value.trim(); if (!txt) { toast('Paste some lyrics first'); return; }
