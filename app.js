@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '1.1.7';
+const VERSION = '1.1.8';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -663,7 +663,7 @@ $('#bGemSave').onclick = async () => {
   finally { clearTimeout(to); b.disabled = false; b.textContent = 'Verify & save'; }
 };
 $('#bReset').onclick = () => { if (!song) return; store.set(offKey(), 0); $('#offV').textContent = '0.0 s'; toast('Offset reset'); };
-/* ---------- song info: about (Wikipedia), translate lyrics, search meaning, other versions ---------- */
+/* ---------- song info: AI write-up of what it's about, translate lyrics ---------- */
 // Short AI write-up of the song's meaning (Pollinations: free, no key; anonymous use is rate-limited).
 // Grounded on the song's own lyrics so it doesn't invent a story.
 function aboutPrompt(s) {
@@ -824,7 +824,7 @@ const aiPrompt = 'Create a shortcut named "ChangAlong" that does this:\n'
   + '3. Get the Title of the Shazam Media and URL-encode it.\n'
   + '4. Get the Artist of the same Shazam Media and URL-encode it.\n'
   + '5. Build this URL, inserting the encoded values: ' + APP_URL + '?title=[encoded title]&artist=[encoded artist]\n'
-  + '6. Open that URL in Safari.';
+  + '6. Open that URL (in the default browser).';
 $('#tplUrl').textContent = howUrl;
 $('#aiPrompt').textContent = aiPrompt;
 $('#bCopyPrompt').onclick = async () => { try { await navigator.clipboard.writeText(aiPrompt); toast('Prompt copied'); } catch (e) { toast('Copy failed: select the text instead'); } };

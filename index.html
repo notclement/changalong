@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="app.css?v=1.1.7">
+<link rel="stylesheet" href="app.css?v=1.1.8">
 </head>
 <body>
 <div class="app">
@@ -45,7 +45,7 @@
   <section id="sing" class="view" hidden>
     <header class="shead">
       <button class="ib" id="bHome" aria-label="Back to search"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
-      <button class="song" id="bSong" aria-label="Song and other versions"><div class="t" id="sT"></div><div class="tp" id="sP"></div><div class="a" id="sA"></div><div class="tg" id="sG"></div></button>
+      <button class="song" id="bSong" aria-label="Song info"><div class="t" id="sT"></div><div class="tp" id="sP"></div><div class="a" id="sA"></div><div class="tg" id="sG"></div></button>
       <button class="ib" id="bSet2" aria-label="Display settings"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
       <div class="prog"><span id="tNow">0:00</span><input type="range" id="seek" min="0" max="1000" value="0" aria-label="Song position"><span id="tEnd">0:00</span></div>
     </header>
@@ -92,7 +92,7 @@
   <div id="verList" hidden></div></section>
 
 <section class="sheet" id="shHow" aria-label="Shortcut setup"><div class="grab"></div><h2>Set up “Listen” (once)</h2>
-  <p class="note">iPhone's built-in Shazam does the listening. A Shortcut named <b>ChangAlong</b> passes the song to this page.</p>
+  <p class="note">iPhone's built-in Shazam does the listening. A Shortcut named <b>ChangAlong</b> passes the song to this page, in your default browser (Safari or Chrome).</p>
   <h3>Quick way: let AI build it</h3>
   <p class="note">Copy this prompt and paste it into the AI shortcut builder in the Shortcuts app (or any assistant that can create shortcuts).</p>
   <code class="prompt" id="aiPrompt"></code>
@@ -108,11 +108,11 @@
 </section>
 
 <section class="sheet" id="shInfo" aria-label="What the tags mean"><div class="grab"></div><h2>What the tags mean</h2>
-  <p class="note">Grey tags sit next to the song title. The first one tells you how precisely the lyrics are timed. That depends on the lyrics file, not on the app.</p>
+  <p class="note">Tags sit under the singer's name. The green or amber one tells you how the lyrics are timed: green scrolls by itself, amber means you tap along. That depends on the lyrics file, not on the app.</p>
   <dl class="tags">
     <dt><span class="tag t-sync">Word synced</span></dt><dd>Every word has its own start time. The highlight follows the real rhythm: it lingers on held notes and speeds through fast parts. Best experience.</dd>
     <dt><span class="tag t-sync">Synced</span></dt><dd>Only each line has a start time. Lines appear exactly on time; inside a line the highlight follows the song's pace, so it may not match every long or quick note.</dd>
-    <dt><span class="tag t-manual">Lyrics only</span></dt><dd>No timing at all. Tap <b>Next line</b> as you sing to move along.</dd>
+    <dt><span class="tag t-manual">Lyrics only</span></dt><dd>No timing at all. Tap <b>Next</b> (bottom right) as you sing to move along.</dd>
   </dl>
   <h3>Other tags</h3>
   <dl class="tags">
@@ -120,7 +120,8 @@
     <dt><span class="tag">Live</span> <span class="tag">Remix</span></dt><dd>A different version from the studio one (also Acoustic, Instrumental, Cover). Its timing may not match what the KTV plays.</dd>
     <dt><span class="tag">繁→简</span></dt><dd>The lyrics were in Traditional characters and were converted to Simplified. Turn this off in Settings → Characters.</dd>
     <dt><span class="tag">Cantonese</span></dt><dd>Showing jyutping instead of pinyin, for songs sung in Cantonese. Switch in Settings.</dd>
-    <dt><span class="tag">No pinyin</span></dt><dd>The song isn't in Chinese, so it's shown as plain text (also <span class="tag">Japanese</span> <span class="tag">Korean</span>).</dd>
+    <dt><span class="tag">Korean · romanised</span></dt><dd>Korean song: romanisation under each word, spelled as it's sung.</dd>
+    <dt><span class="tag">No pinyin</span></dt><dd>The song isn't in Chinese, so it's shown as plain text (also <span class="tag">Japanese</span>).</dd>
   </dl>
   <h3>Colours in duets</h3>
   <dl class="tags">
@@ -137,11 +138,11 @@
 <div class="pop" id="pop"><p>Reading for <b id="popH"></b></p><div class="chips" id="popC"></div></div>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="vendor/pinyin-pro.js?v=1.1.7"></script>
-<script src="vendor/t2s.js?v=1.1.7"></script>
-<script src="vendor/s2t.js?v=1.1.7"></script>
-<script src="vendor/ko-rom.js?v=1.1.7"></script>
-<script src="vendor/catalog.js?v=1.1.7"></script>
-<script src="app.js?v=1.1.7"></script>
+<script src="vendor/pinyin-pro.js?v=1.1.8"></script>
+<script src="vendor/t2s.js?v=1.1.8"></script>
+<script src="vendor/s2t.js?v=1.1.8"></script>
+<script src="vendor/ko-rom.js?v=1.1.8"></script>
+<script src="vendor/catalog.js?v=1.1.8"></script>
+<script src="app.js?v=1.1.8"></script>
 </body>
 </html>

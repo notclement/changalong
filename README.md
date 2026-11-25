@@ -12,7 +12,7 @@ Sing Chinese songs at karaoke without reading Chinese. Lyrics show pinyin under 
 
 ## Features
 
-- Pinyin with tone marks under each character; Cantonese (jyutping) per song
+- Pinyin with tone marks under each character; Cantonese (jyutping) per song; Korean romanisation
 - Lyrics in time with the music: tap the line being sung once, then it scrolls by itself
 - Duet colours (Him / Her / Both) and a 3-2-1 countdown after instrumentals
 - Search by title, part of a title, or pinyin initials (`nnmat` → 你那么爱她)
@@ -23,7 +23,7 @@ Sing Chinese songs at karaoke without reading Chinese. Lyrics show pinyin under 
 
 Listen uses the iPhone's built-in Shazam through a Shortcut.
 
-1. Open the app in Safari and tap **First time? Set up the Shortcut → Copy prompt** (or copy it below).
+1. Open the app in your browser (Safari or Chrome) and tap **First time? Set up the Shortcut → Copy prompt** (or copy it below).
 2. Open the **Shortcuts** app and create a new shortcut with its AI builder, then paste the prompt.
 3. Check the shortcut is named exactly **ChangAlong**.
 4. Optional: Settings → Accessibility → Touch → **Back Tap** → Double Tap → ChangAlong.
@@ -35,7 +35,7 @@ Create a shortcut named "ChangAlong" that does this:
 3. Get the Title of the Shazam Media and URL-encode it.
 4. Get the Artist of the same Shazam Media and URL-encode it.
 5. Build this URL, inserting the encoded values: https://notclement.github.io/changalong/?title=[encoded title]&artist=[encoded artist]
-6. Open that URL in Safari.
+6. Open that URL (in the default browser).
 ```
 
 No AI builder? Add these actions by hand: Recognize Music → URL Encode (Shazam Media → Title) → Text `https://notclement.github.io/changalong/?title=` + URL Encoded Text → Open URLs.
@@ -43,7 +43,7 @@ No AI builder? Add these actions by hand: Recognize Music → URL Encode (Shazam
 ## How to use
 
 1. Tap **Listen** (or double-tap the back of the phone). Shazam finds the song and the lyrics open.
-2. Tap the line being sung right now. The lyrics then scroll in time.
+2. Tap the line being sung right now (or the **Tap** pad, bottom right). The lyrics then scroll in time.
 3. Lyrics late or early? Tap **Behind** / **Ahead**, or tap the current line again.
 4. No Shazam? Search by title or pinyin initials instead.
 
@@ -61,11 +61,15 @@ Add songs to `vendor/catalog.js` as `['Title', 'Singer']`, or `['Title', 'Singer
 
 ## Notes
 
-Tested on iPhone 17 Pro Max only. Found a problem or have an idea? [Open an issue](https://github.com/notclement/changalong/issues).
+Tested on iPhone 17 Pro Max only, in Safari and Chrome. Listen opens songs in your default browser. Found a problem or have an idea? [Open an issue](https://github.com/notclement/changalong/issues).
 
 Made by [Clement](https://www.linkedin.com/in/clementsg).
 
 ## Changelog
+
+**1.1.8**
+- Shortcut opens songs in your default browser (Safari or Chrome)
+- Wording updated: tag guide, Shortcut setup, README
 
 **1.1.7**
 - Korean songs show romanisation under each word and the title, spelled as sung (사랑해 → saranghae)
