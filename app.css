@@ -245,3 +245,8 @@ html,body,button,a,input,.seg,#stage{touch-action:manipulation}
 .itags{margin-top:8px}.itags .tag{margin:0 6px 0 0;cursor:pointer}
 
 @media (max-height:500px){.tap-pad{height:84px}}
+
+/* header tags: one quiet row of small chips under the singer; tap for what they mean */
+.song .tg{display:flex;justify-content:center;flex-wrap:nowrap;gap:5px;margin-top:4px;overflow:hidden;cursor:pointer}
+.song .tg:empty{display:none}
+.song .tg span{flex:none;font-size:10.5px;line-height:1;padding:3px 7px;border-radius:99px;background:var(--sf);color:var(--dim);letter-spacing:.01em}

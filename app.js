@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '1.1.3';
+const VERSION = '1.1.4';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -415,6 +415,7 @@ function openRecord(rec, alts) {
   setLine($('#sA'), esc(artistLine(song.artist)));
   const tags = [lang === 'zh' ? (song.yue ? 'Cantonese' : '') : LANG_TAG[lang], syncTag, song.duet ? 'Duet' : '', versionTag(song.title + ' ' + (song.album || '')), song.toSimp ? '繁→简' : ''];
   song.tags = tags;
+  $('#sG').innerHTML = tags.filter(Boolean).map(t => '<span>' + esc(t) + '</span>').join('');
   setLine($('#sP'), lang === 'zh' ? esc(pyText(simp(song.title))) : '');
   showSingerZh(song);
   $('#tEnd').textContent = song.timed ? fmt(song.dur) : '—';
@@ -822,6 +823,7 @@ $('#aiPrompt').textContent = aiPrompt;
 $('#bCopyPrompt').onclick = async () => { try { await navigator.clipboard.writeText(aiPrompt); toast('Prompt copied'); } catch (e) { toast('Copy failed: select the text instead'); } };
 $('#bHowListen').onclick = () => open('#shHow'); $('#bHowListen2').onclick = () => open('#shHow');
 $('#bInfo').onclick = () => open('#shInfo');
+$('#sG').addEventListener('click', e => { e.stopPropagation(); open('#shInfo'); });
 $('#iTags').addEventListener('click', e => { if (e.target.closest('.tag')) open('#shInfo'); });
 
 /* ---------- browse events ---------- */

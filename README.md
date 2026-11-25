@@ -67,6 +67,9 @@ Made by [Clement](https://www.linkedin.com/in/clementsg).
 
 ## Changelog
 
+**1.1.4**
+- Tags back in the header as a small row under the singer
+
 **1.1.3**
 - Tap button is a big round button bottom-right until you're in sync, then shrinks out of the way
 - Singer shown in Chinese when Shazam gives an English name (Vae Xu → 许嵩)
