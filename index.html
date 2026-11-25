@@ -86,15 +86,19 @@
 </section>
 
 <section class="sheet" id="shHow" aria-label="Shortcut setup"><div class="grab"></div><h2>Set up “Listen” (once)</h2>
-  <p class="note">iPhone's built-in Shazam does the listening. A small Shortcut passes the song name to this page.</p>
+  <p class="note">iPhone's built-in Shazam does the listening. A Shortcut named <b>ChangAlong</b> passes the song to this page.</p>
+  <h3>Quick way: let AI build it</h3>
+  <p class="note">Copy this prompt and paste it into the AI shortcut builder in the Shortcuts app (or any assistant that can create shortcuts).</p>
+  <code class="prompt" id="aiPrompt"></code>
+  <button class="btn" id="bCopyPrompt" style="margin-top:10px">Copy prompt</button>
+  <details class="manual"><summary>Or build it by hand (4 actions)</summary>
   <ol class="steps">
-    <li>Open the <b>Shortcuts</b> app, tap <b>+</b>, and name the shortcut exactly <b>ChangAlong</b>.</li>
-    <li>Add <b>Recognize Music</b>.</li>
-    <li>Add <b>Get Details of Shazam Media</b> → <b>Title</b>. Then add <b>URL Encode</b>. Add <b>Set Variable</b> named <b>T</b>.</li>
-    <li>Add <b>Get Details of Shazam Media</b> → <b>Artist</b> (tap the input and pick <i>Shazam Media</i> again), then <b>URL Encode</b>, then <b>Set Variable</b> named <b>A</b>.</li>
-    <li>Add <b>Text</b> with:<br><code id="tplUrl"></code><button class="link" id="bCopyUrl">Copy</button></li>
-    <li>Add <b>Open URLs</b>. Done. Tip: Settings → Accessibility → Touch → Back Tap → Double Tap → <i>ChangAlong</i>.</li>
-  </ol>
+    <li><b>Recognize Music</b></li>
+    <li><b>URL Encode</b>: tap its input → <i>Shazam Media</i> → tap the bubble again → <b>Title</b>.</li>
+    <li><b>Text</b>: <code id="tplUrl"></code> then insert <i>URL Encoded Text</i> right after the <b>=</b>.</li>
+    <li><b>Open URLs</b> with <i>Text</i> as input. Name the shortcut exactly <b>ChangAlong</b>.</li>
+  </ol></details>
+  <p class="note">Tip: Settings → Accessibility → Touch → Back Tap → Double Tap → <i>ChangAlong</i>.</p>
 </section>
 
 <div class="pop" id="pop"><p>Reading for <b id="popH"></b></p><div class="chips" id="popC"></div></div>

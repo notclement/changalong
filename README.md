@@ -15,15 +15,19 @@ Everything runs in the browser. No account, no backend, no audio leaves the phon
 
 ## Shortcut setup (once)
 
-In the Shortcuts app, create a shortcut named exactly **ChangAlong**:
+Easiest: in the app, tap **First time? Set up the Shortcut → Copy prompt**, and paste it into an AI shortcut builder. The prompt:
 
-1. Recognize Music
-2. Get Details of Shazam Media → Title → URL Encode → Set Variable `T`
-3. Get Details of Shazam Media → Artist → URL Encode → Set Variable `A`
-4. Text: `https://notclement.github.io/changalong/?title=[T]&artist=[A]`
-5. Open URLs
+```
+Create a shortcut named "ChangAlong" that does this:
+1. Use the Recognize Music (Shazam) action to identify the song playing around me.
+2. If no song is recognised, show the alert "No song found. Try again closer to the speaker." and stop.
+3. Get the Title of the Shazam Media and URL-encode it.
+4. Get the Artist of the same Shazam Media and URL-encode it.
+5. Build this URL, inserting the encoded values: https://notclement.github.io/changalong/?title=[encoded title]&artist=[encoded artist]
+6. Open that URL in Safari.
+```
 
-Optional: Settings → Accessibility → Touch → Back Tap → Double Tap → ChangAlong.
+By hand: Recognize Music → URL Encode (Shazam Media → Title) → Text `https://notclement.github.io/changalong/?title=` + URL Encoded Text → Open URLs.
 
 ## Controls
 

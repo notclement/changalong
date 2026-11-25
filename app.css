@@ -108,6 +108,8 @@ textarea.field{min-height:160px;font:15px/1.5 var(--han);resize:vertical;backgro
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
 .steps{padding-left:20px;margin:12px 0 0;display:grid;gap:10px}
 .steps code{display:block;margin-top:6px;padding:8px 10px;border-radius:10px;background:var(--sf2);font-size:12.5px;overflow-wrap:anywhere}
+.prompt{display:block;padding:12px;border-radius:12px;background:var(--sf2);font:13px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.manual{margin-top:16px}.manual summary{min-height:44px;display:flex;align-items:center;color:var(--hl);font-weight:600;cursor:pointer}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chips button{min-height:42px;padding:0 14px;border-radius:99px;border:1px solid var(--faint);font-size:17px;font-weight:700}
 .chips button[aria-pressed=true]{border-color:var(--hl);color:var(--hl)}
