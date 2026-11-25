@@ -1,7 +1,7 @@
 /* ChàngAlong (唱 Along) — PWA. Lyrics from LRCLIB, pinyin from pinyin-pro (bundled), song ID from iOS Shazam via a Shortcut. */
 {
 'use strict';
-const VERSION = '0.4.1';
+const VERSION = '0.5.0';
 const API = 'https://lrclib.net/api';
 const APP_URL = location.origin + location.pathname;
 const $ = s => document.querySelector(s);
@@ -23,31 +23,57 @@ let lastResults = [], paused = false;
 const prefs = { mode: store.get('mode', 'm-both') === 'm-py' ? 'm-py' : 'm-both', size: store.get('size2', 38), script: store.get('script', 'simp'), skin: store.get('skin', 'dark') };
 
 /* ---------- LRC + pinyin ---------- */
+// Returns lines with optional per-character times (ct) from enhanced LRC word tags: [00:12.00]<00:12.00>你<00:12.40>好<00:13.00>
+const ts = (m, sec) => +m * 60 + parseFloat(String(sec).replace(':', '.'));
 function parseLRC(txt) {
   const out = []; let any = false;
   for (const raw of String(txt).split(/\r?\n/)) {
     const tags = [...raw.matchAll(/\[(\d{1,3}):(\d{1,2}(?:[.:]\d{1,3})?)\]/g)];
-    const text = raw.replace(/\[[^\]]*\]/g, '').replace(/<\d+:\d+(?:\.\d+)?>/g, '').trim();
     if (!tags.length && /^\s*\[[a-z]+:/i.test(raw)) continue;
-    if (tags.length) { any = true; for (const m of tags) out.push({ t: +m[1] * 60 + parseFloat(m[2].replace(':', '.')), text }); }
-    else if (text) out.push({ t: null, text });
+    const body = raw.replace(/\[[^\]]*\]/g, '');
+    let text = '', ct = null, wend = null;
+    const segs = [...body.matchAll(/<(\d{1,3}):(\d{1,2}(?:[.:]\d{1,3})?)>([^<]*)/g)];
+    if (segs.length) {
+      ct = []; const lead = body.slice(0, segs[0].index);
+      for (const ch of lead) { text += ch; ct.push(null); }
+      segs.forEach((m, k) => {
+        const t1 = ts(m[1], m[2]), nx = segs[k + 1], t2 = nx ? ts(nx[1], nx[2]) : null;
+        const chars = [...m[3]], n = chars.filter(c => !/\s/.test(c)).length || 1; let j = 0;
+        for (const ch of chars) {
+          text += ch;
+          if (/\s/.test(ch)) { ct.push(null); continue; }
+          const span = t2 != null ? (t2 - t1) : 0.35 * n;
+          ct.push([t1 + span * j / n, t1 + span * (j + 1) / n]); j++;
+        }
+        if (!nx) wend = t2;
+      });
+      if (!ct.some(Boolean)) ct = null;
+    } else text = body;
+    const trimmedStart = text.length - text.trimStart().length;
+    if (ct) ct = ct.slice([...text.slice(0, trimmedStart)].length, [...text.slice(0, trimmedStart)].length + [...text.trim()].length);
+    text = text.trim();
+    if (tags.length) { any = true; for (const m of tags) out.push({ t: ts(m[1], m[2]), text, ct }); }
+    else if (text) out.push({ t: null, text, ct: null });
   }
   if (any) return { timed: true, lines: out.filter(l => l.t != null).sort((a, b) => a.t - b.t).filter(l => l.text) };
   return { timed: false, lines: out.filter(l => l.text) };
 }
-function toUnits(text) {
+function toUnits(text, ct) {
   const P = PP(); let arr = null;
   if (P) { try { arr = P.pinyin(text, { type: 'array', toneType: 'symbol', toneSandhi: true, nonZh: 'removed' }); } catch (e) { log('pinyin failed', e); } }
-  const units = []; let k = 0, buf = '';
-  const flush = () => { if (buf.trim()) units.push({ h: buf.trim(), p: buf.trim(), zh: false }); buf = ''; };
+  const units = []; let k = 0, buf = '', bt = null, idx = 0;
+  const flush = () => { if (buf.trim()) units.push({ h: buf.trim(), p: buf.trim(), zh: false, tm: bt }); buf = ''; bt = null; };
   for (const ch of text) {
-    if (isZh(ch)) { flush(); units.push({ h: ch, p: arr && arr[k] ? arr[k] : '?', zh: true }); k++; }
+    const tm = ct ? ct[idx] : null; idx++;
+    if (isZh(ch)) { flush(); units.push({ h: ch, p: arr && arr[k] ? arr[k] : '?', zh: true, tm }); k++; }
     else if (/[\s，。、！？,.!?；;：:“”"「」『』（）()…~～\-—]/.test(ch)) flush();
-    else buf += ch;
+    else { buf += ch; if (tm) bt = bt ? [bt[0], tm[1]] : tm; }
   }
   flush(); return units;
 }
-const simp = t => (prefs.script === 'simp' && window.toSimplified) ? window.toSimplified(t) : String(t ?? '');
+// Fixes for readings pinyin-pro gets wrong in lyrics; users can still override any syllable.
+try { window.pinyinPro && window.pinyinPro.customPinyin && window.pinyinPro.customPinyin({ '系上': 'jì shàng', '背着': 'bēi zhe', '只为': 'zhǐ wèi', '只为你': 'zhǐ wèi nǐ', '只有': 'zhǐ yǒu', '一只': 'yì zhī', '为你': 'wèi nǐ', '为了': 'wèi le', '为谁': 'wèi shéi' }); } catch (e) {}
+const simp = t => (prefs.script === 'simp' && window.toSimplified) ? window.toSimplified(t).replace(/著(?![名作称述录书者])/g, '着') : String(t ?? '');
 function pyText(t) {
   const P = PP(); t = String(t ?? ''); if (!P || ![...t].some(isZh)) return '';
   try { return P.pinyin(t, { toneType: 'symbol', toneSandhi: true, nonZh: 'consecutive' }).replace(/\s+/g, ' ').trim(); } catch (e) { return ''; }
@@ -83,7 +109,7 @@ function show(view) {
 }
 function resultRow(r, extra) {
   const synced = !!r.syncedLyrics;
-  return '<button class="res" data-id="' + esc(r.id) + '"><span class="art">' + esc(simp((r.trackName || '?').trim().charAt(0))) + '</span><span class="mid"><div class="t">' + esc(simp(r.trackName)) + '</div>' + tpRow(r.trackName) + '<div class="a">' + esc(simp(r.artistName)) + (r.albumName ? ' · ' + esc(r.albumName) : '') + (r.duration ? ' · ' + fmt(r.duration) : '') + '</div></span><span class="badge' + (synced ? ' s' : '') + '">' + (extra || (synced ? 'Synced' : 'Text only')) + '</span></button>';
+  return '<button class="res" data-id="' + esc(r.id) + '"><span class="art">' + esc(simp((r.trackName || '?').trim().charAt(0))) + '</span><span class="rm"><div class="t">' + esc(simp(r.trackName)) + '</div>' + tpRow(r.trackName) + '<div class="a">' + esc(simp(r.artistName)) + (r.albumName ? ' · ' + esc(r.albumName) : '') + (r.duration ? ' · ' + fmt(r.duration) : '') + '</div></span><span class="badge">' + (extra || (synced ? (/<\d+:\d+/.test(r.syncedLyrics) ? 'Word synced' : 'Synced') : 'Lyrics only')) + '</span></button>';
 }
 function renderResults(list, q) {
   lastResults = list;
@@ -92,7 +118,7 @@ function renderResults(list, q) {
 }
 function renderLists() {
   const fav = store.get('fav', []), hist = store.get('hist', []);
-  const row = s => '<button class="res" data-key="' + esc(s.key) + '"><span class="art">' + esc(simp((s.title || '?').charAt(0))) + '</span><span class="mid"><div class="t">' + esc(simp(s.title)) + '</div>' + tpRow(s.title) + '<div class="a">' + esc(simp(s.artist || '')) + '</div></span>' + (fav.some(f => f.key === s.key) ? '<span class="badge s">★</span>' : '') + '</button>';
+  const row = s => '<button class="res" data-key="' + esc(s.key) + '"><span class="art">' + esc(simp((s.title || '?').charAt(0))) + '</span><span class="rm"><div class="t">' + esc(simp(s.title)) + '</div>' + tpRow(s.title) + '<div class="a">' + esc(simp(s.artist || '')) + '</div></span>' + (fav.some(f => f.key === s.key) ? '<span class="badge">★</span>' : '') + '</button>';
   $('#lists').innerHTML = (fav.length ? '<div class="sec">Favourites</div>' + fav.map(row).join('') : '')
     + (hist.length ? '<div class="sec">Recent</div>' + hist.slice(0, 15).map(row).join('') : '');
 }
@@ -114,7 +140,15 @@ const voiceOf = w => {
   if (/^(女|女声|女生|f|female|woman|her|she)$/.test(w)) return 'f';
   return null;
 };
-function splitVoice(text, names) {
+// Bare markers with no colon ("男 明年…", "女记得…") only count when the song uses them on several lines.
+const BARE = /^\s*(男女|合唱|男|女|合)(?![人孩生子儿士朋性友声适作理照影法])\s*/;
+function bareMarkers(lines) {
+  const c = { m: 0, f: 0, b: 0 };
+  for (const l of lines) { const m = l.text.match(BARE); if (m) c[voiceOf(m[1])]++; }
+  return (c.m && c.f) || c.m + c.f + c.b >= 3;
+}
+function splitVoice(text, names, bare) {
+  if (bare) { const m = text.match(BARE); if (m && m[0].length < text.length) return { v: voiceOf(m[1]), text: text.slice(m[0].length) }; }
   // "(男) ..."  "【女】..."  "男：..."  "合 : ..."  "周杰伦：..."
   let m = text.match(/^\s*[(（\[【]\s*([^)）\]】]{1,8})\s*[)）\]】]\s*[:：]?\s*/);
   if (m && voiceOf(m[1])) return { v: voiceOf(m[1]), text: text.slice(m[0].length) };
@@ -147,23 +181,26 @@ function openRecord(rec, alts) {
   const parsed = parseLRC(simp(rec.lrc));
   const ov = store.get('ov.' + rec.key, {});
   song = { ...rec, timed: parsed.timed, alts: alts || null };
-  const names = {}; let voice = null;
+  const names = {}; let voice = null; const bare = bareMarkers(parsed.lines);
   song.lines = parsed.lines.map((l, i) => {
-    let text = l.text, credit = false;
+    let text = l.text, credit = false, ct = l.ct;
     if (CREDIT.test(text)) credit = true;
-    else { const sv = splitVoice(text, names); if (sv) { voice = sv.v; text = sv.text; if (sv.name) VOICES[sv.v].name = sv.name; } }
-    const u = credit ? [] : toUnits(text); u.forEach((x, j) => { const o = ov[i + ':' + j]; if (o) { x.p = o; x.fix = true; } });
-    return { t: l.t, text, u, credit, v: credit ? null : voice };
+    else { const sv = splitVoice(text, names, bare); if (sv) { voice = sv.v; if (ct) ct = ct.slice([...text].length - [...sv.text].length); text = sv.text; } }
+    const u = credit ? [] : toUnits(text, ct); u.forEach((x, j) => { const o = ov[i + ':' + j]; if (o) { x.p = o; x.fix = true; } });
+    const timedWords = u.length > 0 && u.every(x => x.tm);
+    return { t: l.t, text, u, credit, v: credit ? null : voice, words: timedWords };
   });
+  song.wordSync = song.lines.some(l => l.words);
   song.duet = song.lines.some(l => l.v);
   song.names = Object.fromEntries(Object.entries(names).map(([n, v]) => [v, n]));
   song.lines.forEach((l, i) => { const p = song.lines[i - 1]; l.turn = !!l.v && (!p || p.v !== l.v || p.credit); });
   log('voices', song.duet ? JSON.stringify(names) || 'markers' : 'none');
-  song.lines.forEach((l, i) => { const nx = song.lines[i + 1]; l.end = (nx && nx.t - l.t < 8) ? nx.t - 0.15 : l.t + Math.min(5, 0.42 * l.u.length + 0.8); });
+  song.lines.forEach((l, i) => { const nx = song.lines[i + 1]; l.end = l.words ? Math.max(l.t + 0.3, l.u.at(-1).tm[1]) : (nx && nx.t - l.t < 8) ? nx.t - 0.15 : l.t + Math.min(5, 0.42 * l.u.length + 0.8); });
   if (song.timed && !song.dur) song.dur = song.lines.at(-1).t + 10;
   $('#sT').textContent = simp(song.title) || 'Lyrics';
-  $('#sP').textContent = pyText(simp(song.title));
+  const syncTag = !song.timed ? 'Lyrics only' : song.wordSync ? 'Word synced' : 'Synced';
   $('#sA').textContent = simp(song.artist || '') + (pyText(simp(song.artist)) ? ' (' + pyText(simp(song.artist)) + ')' : '') + (song.alts && song.alts.length > 1 ? ' · ' + song.alts.length + ' versions' : '');
+  $('#sP').innerHTML = esc(pyText(simp(song.title))) + ' <span class="tag">' + syncTag + '</span>';
   $('#bFav').classList.toggle('on', store.get('fav', []).some(f => f.key === song.key));
   $('#tEnd').textContent = song.timed ? fmt(song.dur) : '—';
   $('#seek').disabled = !song.timed;
@@ -230,7 +267,11 @@ function tick() {
     const l = song.lines[i], el = $('#stage').children[i];
     if (l && el) {
       const f = Math.min(1, Math.max(0, (tt - l.t) / (l.end - l.t))), n = l.u.length;
-      el.querySelectorAll('.u').forEach((s, k) => s.style.setProperty('--p', Math.min(1, Math.max(0, f * n - k)) * 100 + '%'));
+      el.querySelectorAll('.u').forEach((s, k) => {
+        const tm = l.words && l.u[k].tm;   // word-timed: follow the real rhythm (held notes, fast runs)
+        const p = tm ? (tt - tm[0]) / Math.max(0.05, tm[1] - tm[0]) : f * n - k;
+        s.style.setProperty('--p', Math.min(1, Math.max(0, p)) * 100 + '%');
+      });
     }
     const nx = song.lines[i + 1];
     if (!ended) {

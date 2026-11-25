@@ -39,8 +39,9 @@ By hand: Recognize Music → URL Encode (Shazam Media → Title) → Text `https
 | Fix a wrong reading (多音字) | Press and hold the syllable, pick the reading |
 | Other versions (live, remaster) | Tap the song title |
 | Display | Settings: 汉字 + pinyin (pinyin under each character) or Pinyin only, Simplified or as written, text size, dark/light |
-| Duets | Lines marked 男 / 女 / 合 (or singer names) are coloured: Him blue, Her pink, Both green, with a heads-up before each change |
+| Duets | Lines marked 男 / 女 / 合, with or without a colon (or singer names) are coloured: Him blue, Her pink, Both green, with a heads-up before each change |
 | Pause | Pause button, bottom right |
+| Sync tag | Grey tag by the title: Word synced (highlight follows each word's timing), Synced (per line), Lyrics only (tap to advance) |
 | No timestamps | Plain lyrics switch to tap-to-advance |
 
 ## Development
